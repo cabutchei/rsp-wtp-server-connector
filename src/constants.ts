@@ -10,16 +10,16 @@ import { FelixRspLauncherOptions } from "./impl/server";
 /**
  * RSP Provider ID
  */
-const RSP_PROVIDER_ID = 'redhat.vscode-server-connector';
+const RSP_PROVIDER_ID = 'cabutchei.my-custom-connector';
 /**
  * RSP Provider Name - it will be displayed in the tree node
  */
-const RSP_PROVIDER_NAME = 'JBoss Toolkit';
+const RSP_PROVIDER_NAME = 'Custom Provider';
 
 /**
  * The provider id to be used in the .rsp folder
  */
-const RSP_ID = 'redhat-server-connector';
+const RSP_ID = 'this-is-a-test-provider-id';
 
 /**
  * The minimum port for this rsp instance to avoid clobbering
@@ -47,10 +47,14 @@ export const getImageFilenameForServerType = (serverType: string): string => {
         return 'jboss.eap.png';
     } else if (serverType.startsWith('org.jboss.tools.openshift.cdk.server.type')) {
         return 'Logotype_RH_OpenShift.svg';
+    } else if (serverType.startsWith('com.ibm.ws.ast.st.v85.server.base')) {
+        return 'websphere.png';
+    } else if (serverType.startsWith('com.ibm.ws.st.server.wlp')) {
+        return 'liberty.png';
     } else {
         return 'server-light.png';
     }
-}
+};
 
 export const OPTIONS: FelixRspLauncherOptions = {
     providerId: RSP_PROVIDER_ID,
@@ -60,7 +64,7 @@ export const OPTIONS: FelixRspLauncherOptions = {
     maxPort: RSP_MAX_PORT,
     connectionDelay: RSP_CONNECTION_DELAY,
     connectionPollFrequency: RSP_CONNECTION_POLL_INTERVAL,
-    minimumSupportedJava: 11,
+    minimumSupportedJava: 8,
     getImagePathForServerType: function (serverType: string): Uri {
         const tmpPath: string = getImageFilenameForServerType(serverType);
         if( tmpPath )

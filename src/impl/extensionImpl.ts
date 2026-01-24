@@ -31,6 +31,13 @@ export async function activateImpl(context: vscode.ExtensionContext,
         serverConnectorUI.api.registerRSPProvider(rsp);
     }
     registerRecommendations(context);
+    const storageUri = context.storageUri;
+    if (!storageUri) {
+        vscode.window.showErrorMessage('No workspace-specific storage available (probably no folder opened).');
+        return;
+    }
+    await vscode.workspace.fs.createDirectory(storageUri);
+    process.env['VSCODE_STORAGE_PATH'] = storageUri.path;
 
     return api;
 }

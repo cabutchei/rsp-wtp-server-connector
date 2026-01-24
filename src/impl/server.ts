@@ -133,13 +133,19 @@ export class FelixRspLauncher {
         stdoutCallback: (data: string) => void, 
         stderrCallback: (data: string) => void, api: FelixRspController): void {
 
-        const felix = path.join(location, 'bin', 'felix.jar');
+        // const felix = path.join(location, 'bin', 'felix.jar');
+        const felix = path.join(location, 'org.eclipse.equinox.launcher_1.5.300.v20190213-1655.jar');
         const java = path.join(javaHome, 'bin', 'java');
+        const storagePath = process.env['VSCODE_STORAGE_PATH'];
+        const workspaceProjects: string[] = vscode.workspace.workspaceFolders.map(o => o.uri.path);
         // Debuggable version
-        // const process = cp.spawn(java, [`-Xdebug`, `-Xrunjdwp:transport=dt_socket,server=y,address=8001,suspend=y`, `-Drsp.server.port=${port}`, '-jar', felix], { cwd: location });
+        const args: string[] = ['-Xdebug', '-Xrunjdwp:transport=dt_socket,server=y,address=5005,suspend=n', `-Drsp.server.port=${port}`,
+            `-Dorg.jboss.tools.rsp.workspace.projects=${workspaceProjects.join(',')}`, '-jar', felix, '-data', storagePath];
+        // args.push('-consoleLog');
+        this.cpProcess = cp.spawn(java, args, { cwd: location });
         // Production version
-        this.cpProcess = cp.spawn(java, [`-Drsp.server.port=${port}`, `-Dorg.jboss.tools.rsp.id=${this.options.rspId}`, '-Dlogback.configurationFile=./conf/logback.xml', '-jar', felix], 
-            { cwd: location, env: process.env });
+        // this.cpProcess = cp.spawn(java, [`-Drsp.server.port=${port}`, `-Dorg.jboss.tools.rsp.id=${this.options.rspId}`, '-Dlogback.configurationFile=./conf/logback.xml',
+        //     `-Dorg.jboss.tools.rsp.workspace.projects=${workspaceProjects.join(',')}`, '-jar', felix, '-data', storagePath], { cwd: location, env: process.env });
         if(this.cpProcess) {
             if (this.cpProcess.stdout)
                 this.cpProcess.stdout.on('data', stdoutCallback);
@@ -190,7 +196,8 @@ export class FelixRspLauncher {
             if(lockFileExist && !portInUse) {
                 fs.unlinkSync(lockFile);
             }
-            localPort = serverPort;
+            // localPort = serverPort;
+            localPort = 27511;
             const serverLocation = this.getServerLocation(process);
             this.startServer(serverLocation, localPort, this.javaHome, stdoutCallback, stderrCallback, api);
             localSpawned = true;
