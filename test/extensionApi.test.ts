@@ -7,7 +7,7 @@ import * as chai from 'chai';
 import { FelixRspController } from '../src/impl/controller';
 import * as sinon from 'sinon';
 import * as sinonChai from 'sinon-chai';
-import { ServerInfo } from 'vscode-server-connector-api';
+import { ServerInfo } from 'rsp-wtp-server-connector-api';
 import { OPTIONS } from '../src/constants';
 
 const expect = chai.expect;

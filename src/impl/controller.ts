@@ -5,25 +5,25 @@
 
 import { EventEmitter } from 'events';
 import { Uri } from 'vscode';
-import { RSPController, ServerInfo, ServerState } from 'vscode-server-connector-api';
-import { FelixRspLauncher, FelixRspLauncherOptions } from './server';
+import { RSPController, ServerInfo, ServerState } from 'rsp-wtp-server-connector-api';
+import { EquinoxRspLauncher, EquinoxRspLauncherOptions } from './server';
 
 export class FelixRspController implements RSPController {
-    private opts: FelixRspLauncherOptions;
-    private launcher: FelixRspLauncher;
+    private opts: EquinoxRspLauncherOptions;
+    private launcher: EquinoxRspLauncher;
     private host: string;
     private port: number;
     private emitter: EventEmitter;
 
-    public constructor(opts: FelixRspLauncherOptions) {
+    public constructor(opts: EquinoxRspLauncherOptions) {
         this.opts = opts;
-        this.launcher = new FelixRspLauncher(opts);
+        this.launcher = new EquinoxRspLauncher(opts);
         this.host = '';
         this.port = 0;
         this.emitter = new EventEmitter();
     }
 
-    public getLauncher(): FelixRspLauncher {
+    public getLauncher(): EquinoxRspLauncher {
         return this.launcher;
     }
     

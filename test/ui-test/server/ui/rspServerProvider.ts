@@ -164,7 +164,7 @@ export class RSPServerProvider extends AbstractServer {
         // Since rsp-ui 0.23.9 there is by default new webView now
         // can be turned off by setting property: rsp-ui.newserverwebviewworkflow = false
         if (webView) {
-            log.info(`Filling out new server details via webview`);
+            log.info('Filling out new server details via webview');
             await VSBrowser.instance.driver.wait(async () => editorIsOpened('New Server'), 3000);
             const editorView = new EditorView();
             const editors = await editorView.getOpenEditorTitles();

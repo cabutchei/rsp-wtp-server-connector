@@ -10,7 +10,7 @@ import * as path from 'path';
 import * as portfinder from 'portfinder';
 import * as requirements from './requirements';
 import * as vscode from 'vscode';
-import { ServerInfo, ServerState } from 'vscode-server-connector-api';
+import { ServerInfo, ServerState } from 'rsp-wtp-server-connector-api';
 import * as waitOn from 'wait-on';
 import * as tcpPort from 'tcp-port-used';
 import * as fs from 'fs-extra';
@@ -25,7 +25,7 @@ export interface HostPortSpawned {
     spawned: boolean;
 }
 
-export interface FelixRspLauncherOptions {
+export interface EquinoxRspLauncherOptions {
     providerId: string;
     providerName: string;
     rspId: string;
@@ -37,13 +37,13 @@ export interface FelixRspLauncherOptions {
     getImagePathForServerType: (serverType: string) => Uri;
 }
 
-export class FelixRspLauncher {
-    private options: FelixRspLauncherOptions;
+export class EquinoxRspLauncher {
+    private options: EquinoxRspLauncherOptions;
     private cpProcess: cp.ChildProcess;
     private javaHome: string;
     private port: number;
     private spawned: boolean;
-    constructor(options: FelixRspLauncherOptions ) {
+    constructor(options: EquinoxRspLauncherOptions) {
         this.options = options;
     }
 
@@ -54,17 +54,17 @@ export class FelixRspLauncher {
         let requirementResult: RequirementsResult = undefined;
         try {
             requirementResult = await requirements.resolveRequirements(this.options.minimumSupportedJava);
-        } catch( err ) {
+        } catch(err) {
             return Promise.reject(err);
         }
-        if( !requirementResult) {
-            return Promise.reject("Unable to find java_home and java version, reason unknown");
+        if(!requirementResult) {
+            return Promise.reject('Unable to find java_home and java version, reason unknown');
         }
-        if( requirementResult.unexpectedError) {
+        if(requirementResult.unexpectedError) {
             return Promise.reject(requirementResult.unexpectedError);
         }
 
-        if( requirementResult.rejection ) {
+        if(requirementResult.rejection) {
             const rejection: RspRequirementsRejection = requirementResult.rejection;
             this.displayRequirementRejection(rejection);
             return;
@@ -133,19 +133,19 @@ export class FelixRspLauncher {
         stdoutCallback: (data: string) => void, 
         stderrCallback: (data: string) => void, api: FelixRspController): void {
 
-        // const felix = path.join(location, 'bin', 'felix.jar');
-        const felix = path.join(location, 'org.eclipse.equinox.launcher_1.5.300.v20190213-1655.jar');
+        const equinox = path.join(location, 'org.eclipse.equinox.launcher_1.5.300.v20190213-1655.jar');
         const java = path.join(javaHome, 'bin', 'java');
         const storagePath = process.env['VSCODE_STORAGE_PATH'];
-        const workspaceProjects: string[] = vscode.workspace.workspaceFolders.map(o => o.uri.path);
         // Debuggable version
-        const args: string[] = ['-Xdebug', '-Xrunjdwp:transport=dt_socket,server=y,address=5005,suspend=n', `-Drsp.server.port=${port}`,
-            `-Dorg.jboss.tools.rsp.workspace.projects=${workspaceProjects.join(',')}`, '-jar', felix, '-data', storagePath];
-        // args.push('-consoleLog');
-        this.cpProcess = cp.spawn(java, args, { cwd: location });
+        // const suspend = 'y';
+        // const debugPort = 5007;
+        // const consoleLog = '-consoleLog';
+        // const args: string[] = [`-agentlib:jdwp=transport=dt_socket,server=y,address=${debugPort},suspend=${suspend}`, `-Drsp.server.port=${port}`,
+        //     '-jar', equinox, '-data', storagePath, consoleLog];
+        // this.cpProcess = cp.spawn(java, args, { cwd: location });
         // Production version
-        // this.cpProcess = cp.spawn(java, [`-Drsp.server.port=${port}`, `-Dorg.jboss.tools.rsp.id=${this.options.rspId}`, '-Dlogback.configurationFile=./conf/logback.xml',
-        //     `-Dorg.jboss.tools.rsp.workspace.projects=${workspaceProjects.join(',')}`, '-jar', felix, '-data', storagePath], { cwd: location, env: process.env });
+        this.cpProcess = cp.spawn(java, [`-Drsp.server.port=${port}`, `-Dorg.jboss.tools.rsp.id=${this.options.rspId}`, '-Dlogback.configurationFile=./conf/logback.xml',
+            '-jar', equinox, '-data', storagePath], { cwd: location, env: process.env });
         if(this.cpProcess) {
             if (this.cpProcess.stdout)
                 this.cpProcess.stdout.on('data', stdoutCallback);
@@ -214,13 +214,13 @@ export class FelixRspLauncher {
             host: 'localhost',
             port: localPort,
             spawned: localSpawned,
-        }
+        };
         return ret;
     }
     private displayRequirementRejection(error: RspRequirementsRejection) {
-        if( error ) {
-            let msg = error.message;
-            let buttonArray: ErrorMsgBtn[] = error.btns || [];
+        if(error) {
+            const msg = error.message;
+            const buttonArray: ErrorMsgBtn[] = error.btns || [];
             const buttonLabels:string[] = buttonArray.map(btn => btn.label);
             // show error
             vscode.window.showErrorMessage(msg, ...buttonLabels)
@@ -231,8 +231,8 @@ export class FelixRspLauncher {
                             vscode.commands.executeCommand('vscode.open', btnSelected.openUrl);
                         } else {
                             vscode.window.showInformationMessage(
-                                `To configure Java for the JBoss Toolkit Extension, add "rsp-ui.rsp.java.home" property to your settings file
-                        (ex. "rsp-ui.rsp.java.home": "/usr/local/java/jdk-${this.options.minimumSupportedJava}.0.1").`);
+                                `To configure Java for the WebSphere Tools Extension, add "rsp-wtp-ui.rsp.java.home" property to your settings file
+                        (ex. "rsp-wtp-ui.rsp.java.home": "/usr/local/java/jdk-${this.options.minimumSupportedJava}.0.1").`);
                             vscode.commands.executeCommand(
                                 'workbench.action.openSettingsJson'
                             );

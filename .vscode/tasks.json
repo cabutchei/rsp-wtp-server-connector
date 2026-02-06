@@ -5,6 +5,7 @@
     "tasks": [
         {
             "type": "npm",
+            "label": "build",
             "script": "watch",
             "problemMatcher": "$tsc-watch",
             "isBackground": true,

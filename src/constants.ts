@@ -4,22 +4,22 @@
  *-----------------------------------------------------------------------------------------------*/
 
 import * as path from 'path';
-import { Uri } from "vscode";
-import { FelixRspLauncherOptions } from "./impl/server";
+import { Uri } from 'vscode';
+import { EquinoxRspLauncherOptions } from './impl/server';
 
 /**
  * RSP Provider ID
  */
-const RSP_PROVIDER_ID = 'cabutchei.my-custom-connector';
+const RSP_PROVIDER_ID = 'cabutchei.rsp-wtp-server-connector';
 /**
  * RSP Provider Name - it will be displayed in the tree node
  */
-const RSP_PROVIDER_NAME = 'Custom Provider';
+const RSP_PROVIDER_NAME = 'WebSphere Tools';
 
 /**
  * The provider id to be used in the .rsp folder
  */
-const RSP_ID = 'this-is-a-test-provider-id';
+const RSP_ID = 'cabutchei-rsp-wtp-server-connector';
 
 /**
  * The minimum port for this rsp instance to avoid clobbering
@@ -56,7 +56,7 @@ export const getImageFilenameForServerType = (serverType: string): string => {
     }
 };
 
-export const OPTIONS: FelixRspLauncherOptions = {
+export const OPTIONS: EquinoxRspLauncherOptions = {
     providerId: RSP_PROVIDER_ID,
     providerName: RSP_PROVIDER_NAME,
     rspId: RSP_ID,
@@ -67,8 +67,8 @@ export const OPTIONS: FelixRspLauncherOptions = {
     minimumSupportedJava: 8,
     getImagePathForServerType: function (serverType: string): Uri {
         const tmpPath: string = getImageFilenameForServerType(serverType);
-        if( tmpPath )
+        if(tmpPath)
             return Uri.file(path.join(__dirname, '..', '..', 'images', tmpPath));
         return null;
     }
-}
+};

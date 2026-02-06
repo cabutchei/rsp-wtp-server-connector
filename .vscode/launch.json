@@ -6,17 +6,23 @@
 	"version": "0.2.0",
     "configurations": [
         {
-            "name": "Extension",
+            "name": "rsp-wtp-server-connector",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}"
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                // "--extensionDevelopmentPath=${workspaceFolder}/../vscode-rsp-ui"
             ],
             "outFiles": [
-                "${workspaceFolder}/out/**/*.js"
+                "${workspaceFolder}/out/**/*.js",
+                // "${workspaceFolder}/../vscode-rsp-ui/out/**/*.js"
             ],
-            "preLaunchTask": "npm: watch"
+            // "preLaunchTask": "npm: watch",
+            "env": {
+                "RSP_SERVER_LOCATION": "${workspaceFolder}/../rsp-server/distribution/dist/target/products/com.github.cabutchei.rsp.server.product/macosx/cocoa/x86_64/rsp-wtp-server.app/Contents/Eclipse/plugins",
+                "JAVA_HOME": "${userHome}/.sdkman/candidates/java/17.0.12-oracle/",
+            }
         },
         {
             "name": "Extension Tests Debug",
@@ -30,7 +36,7 @@
             "outFiles": [
                 "${workspaceFolder}/out/test/**/*.js"
             ],
-            "preLaunchTask": "npm: watch",
+            // "preLaunchTask": "npm: watch",
             "env": {
                 "VSCA_TEST_MODE": "debug"
             }

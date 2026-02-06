@@ -52,7 +52,7 @@ export async function resolveRequirements(minJavaVersion: number): Promise<Requi
     try {
         const ret: RequirementsResult = await resolveRequirementsImpl(minJavaVersion);
         return Promise.resolve(ret);
-    } catch( err ) {
+    } catch(err) {
         const ret: RequirementsResult = {
             unexpectedError: err
         };
@@ -62,23 +62,23 @@ export async function resolveRequirements(minJavaVersion: number): Promise<Requi
 
 export async function resolveRequirementsImpl(minJavaVersion: number): Promise<RequirementsResult> {
     const javaHome: string | RspRequirementsRejection = await checkJavaRuntime();
-    if( !javaHome ) {
+    if(!javaHome) {
         return {rejection: getRejectionWithDownloadUrl('Unexpected Error: Java Home could not be located')};
     }
-    if( (javaHome as any).rspReqReject) {
+    if((javaHome as any).rspReqReject) {
         return {rejection: javaHome as RspRequirementsRejection};
     }
     const javaHome2: string = javaHome as string;
     const javaVersion: number | RspRequirementsRejection = await checkJavaVersion(javaHome2, minJavaVersion);
-    if( !javaVersion ) {
+    if(!javaVersion) {
         return {rejection: getRejectionWithDownloadUrl('Unexpected Error: Java Version could not be discovered for java home ' + javaHome2)};
     }
 
-    if( (javaVersion as any).rspReqReject) {
+    if((javaVersion as any).rspReqReject) {
         return {rejection: javaVersion as RspRequirementsRejection};
     }
     const javaVersion2: number = javaVersion as number;
-    const data: RequirementsData = { java_home: javaHome2, java_version: javaVersion2}
+    const data: RequirementsData = { java_home: javaHome2, java_version: javaVersion2};
     return {data: data};
 }
 
@@ -86,7 +86,7 @@ async function checkJavaRuntime(): Promise<string | RspRequirementsRejection> {
     let source: string;
     let javaHome: string | undefined = readJavaConfig();
     if (javaHome) {
-        source = 'The rsp-ui.rsp.java.home variable defined in VS Code settings';
+        source = 'The rsp-wtp-ui.rsp.java.home variable defined in VS Code settings';
     } else {
         javaHome = process.env.JDK_HOME;
         if (javaHome) {
@@ -123,7 +123,7 @@ async function checkJavaRuntime(): Promise<string | RspRequirementsRejection> {
 }
 function readJavaConfig(): string | undefined {
     const config = workspace.getConfiguration();
-    const ret = config.get<string | undefined>('rsp-ui.rsp.java.home', undefined);
+    const ret = config.get<string | undefined>('rsp-wtp-ui.rsp.java.home', undefined);
     if(ret)
         return ret;
     // Backwards compatibility
@@ -153,26 +153,26 @@ async function checkJavaVersion(javaHome: string, minJavaVersion: number):
     let processDone = false;
     process.on('exit', function() {
         processDone = true;
-      });
+    });
     const start = Date.now();
     const max = 10000;
     const end = start + max;
     let expired = false;
-    while( !(cpDone && processDone) && !expired) {
+    while(!(cpDone && processDone) && !expired) {
         await new Promise(resolve => setTimeout(resolve, 250));
         expired = Date.now() > end;
     }
-    if( !ret && expired) {
+    if(!ret && expired) {
         try {
-            if( process )
+            if(process)
                 process.kill();
-        } catch( e ) {
-        }
-        const msg = "Error getting java version for " + javaExecutable + ": 'java -version' did not return within " + (max/1000) + " seconds."
+        // eslint-disable-next-line no-empty
+        } catch(e) {}
+        const msg = 'Error getting java version for ' + javaExecutable + ': \'java -version\' did not return within ' + (max/1000) + ' seconds.';
         return getRejectionWithDownloadUrl(msg);
     }
-    if( !ret ) {
-        const msg = "Error getting java version for " + javaExecutable + ": 'java -version' output was unable to be parsed.";
+    if(!ret) {
+        const msg = 'Error getting java version for ' + javaExecutable + ': \'java -version\' output was unable to be parsed.';
         return getRejectionWithDownloadUrl(msg);
     }
     return ret;
@@ -221,6 +221,6 @@ function getRejectionWithDownloadUrl(message: string): RspRequirementsRejection 
                 label: 'Configure Java'
             }
         ]
-    }
+    };
     return rejectVal;
 }
