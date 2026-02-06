@@ -135,9 +135,9 @@ export class RSPServerProvider extends AbstractServer {
         log.info(`Creating new local server at ${serverPath} with name ${serverName}`);
         const quick = await this.getCreateNewServerBox();
         await quick.selectQuickPick('No, use server on disk');
-        log.info(`Selected use server on disk`);
+        log.info('Selected use server on disk');
 
-        log.info(`Awaiting possible file manager input box`);
+        log.info('Awaiting possible file manager input box');
 
         // it might happen, depending on vscode settings, that native file manager dialog wont appear
         // instead we got input box where we can search for files
@@ -151,7 +151,7 @@ export class RSPServerProvider extends AbstractServer {
         }
 
         // might get secure storage input box
-        log.info(`Awaiting possible secure storage prompt`);
+        log.info('Awaiting possible secure storage prompt');
         try {
             const secureStorage = await InputBox.create();
             const indexOf = (await secureStorage.getMessage()).indexOf('secure storage');
@@ -176,14 +176,14 @@ export class RSPServerProvider extends AbstractServer {
             await serverView.setServerId(serverName);
             await serverView.finish();
         } else {
-            log.info(`Filling out new server details via input box`);
+            log.info('Filling out new server details via input box');
             const nameInput = await InputBox.create();
             await nameInput.setText(serverName);
             await nameInput.confirm();
             const optionsInput = await InputBox.create();
             await optionsInput.selectQuickPick('No');
         }
-        log.info(`Done creating new server from local disk`);
+        log.info('Done creating new server from local disk');
     }
 
     public async createServer(testServer: ServerTestType): Promise<void> {
