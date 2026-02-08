@@ -48,7 +48,7 @@ export const getImageFilenameForServerType = (serverType: string): string => {
     } else if (serverType.startsWith('org.jboss.tools.openshift.cdk.server.type')) {
         return 'Logotype_RH_OpenShift.svg';
     } else if (serverType.startsWith('com.ibm.ws.ast.st.v85.server.base')) {
-        return 'websphere.png';
+        return 'liberty.png';
     } else if (serverType.startsWith('com.ibm.ws.st.server.wlp')) {
         return 'liberty.png';
     } else {
