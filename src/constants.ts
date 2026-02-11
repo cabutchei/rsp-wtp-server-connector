@@ -14,7 +14,7 @@ const RSP_PROVIDER_ID = 'cabutchei.rsp-wtp-server-connector';
 /**
  * RSP Provider Name - it will be displayed in the tree node
  */
-const RSP_PROVIDER_NAME = 'WebSphere Tools';
+const RSP_PROVIDER_NAME = 'RSP-WTP Server Connectors';
 
 /**
  * The provider id to be used in the .rsp folder

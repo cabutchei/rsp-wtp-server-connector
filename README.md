@@ -14,7 +14,7 @@ A Visual Studio Code extension for interacting with IBM Servers and Runtimes lik
 
 ![ screencast ](https://raw.githubusercontent.com/redhat-developer/vscode-server-connector/master/screencast/vscode-server-connector.gif)
 
-This extension depends on VSCode RSP-WTP UI Extension which is going to be installed automatically along with the WebSphere Tools Extension. RSP UI, in conjunction with WebSphere Tools Extension supports several commands for interacting with supported server adapters; these are accessible via the command menu (`Cmd+Shift+P` on macOS or `Ctrl+Shift+P` on Windows and Linux) and may be bound to keys in the normal way.
+This extension depends on VSCode RSP-WTP UI Extension which is going to be installed automatically along with the RSP-WTP Server Connectors Extension. RSP UI, in conjunction with RSP-WTP Server Connectors Extension supports several commands for interacting with supported server adapters; these are accessible via the command menu (`Cmd+Shift+P` on macOS or `Ctrl+Shift+P` on Windows and Linux) and may be bound to keys in the normal way.
 
 ### Available Commands
    This extension provides no additional commands other than those available in [rsp-wtp-ui](https://github.com/redhat-developer/rsp-wtp-ui#available-commands)
