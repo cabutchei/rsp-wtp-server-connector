@@ -123,7 +123,7 @@ export class EquinoxRspLauncher {
 
     private getServerLocation(process: NodeJS.Process): string {
         return process.env.RSP_SERVER_LOCATION ?
-            process.env.RSP_SERVER_LOCATION : path.resolve(__dirname, '..', '..', '..', 'server');
+            process.env.RSP_SERVER_LOCATION : path.resolve(__dirname, '..', '..', '..', 'server', 'plugins');
     }
 
     private startServer(
@@ -231,7 +231,7 @@ export class EquinoxRspLauncher {
                             vscode.commands.executeCommand('vscode.open', btnSelected.openUrl);
                         } else {
                             vscode.window.showInformationMessage(
-                                `To configure Java for the WebSphere Tools Extension, add "rsp-wtp-ui.rsp.java.home" property to your settings file
+                                `To configure Java for the RSP-WTP Server Connectors Extension, add "rsp-wtp-ui.rsp.java.home" property to your settings file
                         (ex. "rsp-wtp-ui.rsp.java.home": "/usr/local/java/jdk-${this.options.minimumSupportedJava}.0.1").`);
                             vscode.commands.executeCommand(
                                 'workbench.action.openSettingsJson'
