@@ -126,26 +126,34 @@ export class EquinoxRspLauncher {
             process.env.RSP_SERVER_LOCATION : path.resolve(__dirname, '..', '..', '..', 'server', 'plugins');
     }
 
-    private startServer(
+    private async getDebugPort(): Promise<number> {
+        if (process.env.RSP_DEBUG_PORT) {
+            return +process.env.RSP_DEBUG_PORT;
+        }
+        return await portfinder.getPortPromise(
+            {port: this.options.minPort, stopPort: this.options.maxPort});
+    }
+
+    private async startServer(
         location: string, 
         port: number, 
         javaHome: string,
         stdoutCallback: (data: string) => void, 
-        stderrCallback: (data: string) => void, api: FelixRspController): void {
+        stderrCallback: (data: string) => void, api: FelixRspController): Promise<void> {
 
         const equinox = path.join(location, 'org.eclipse.equinox.launcher_1.5.300.v20190213-1655.jar');
         const java = path.join(javaHome, 'bin', 'java');
         const storagePath = process.env['VSCODE_STORAGE_PATH'];
         // Debuggable version
-        // const suspend = 'y';
-        // const debugPort = 5007;
-        // const consoleLog = '-consoleLog';
-        // const args: string[] = [`-agentlib:jdwp=transport=dt_socket,server=y,address=${debugPort},suspend=${suspend}`, `-Drsp.server.port=${port}`,
-        //     '-jar', equinox, '-data', storagePath, consoleLog];
-        // this.cpProcess = cp.spawn(java, args, { cwd: location });
+        const suspend = 'n';
+        const debugPort = await this.getDebugPort();
+        const consoleLog = '-consoleLog';
+        const args: string[] = [`-agentlib:jdwp=transport=dt_socket,server=y,address=${debugPort},suspend=${suspend}`, `-Drsp.server.port=${port}`,
+            '-jar', equinox, '-data', storagePath, consoleLog];
+        this.cpProcess = cp.spawn(java, args, { cwd: location });
         // Production version
-        this.cpProcess = cp.spawn(java, [`-Drsp.server.port=${port}`, `-Dorg.jboss.tools.rsp.id=${this.options.rspId}`, '-Dlogback.configurationFile=./conf/logback.xml',
-            '-jar', equinox, '-data', storagePath], { cwd: location, env: process.env });
+        // this.cpProcess = cp.spawn(java, [`-Drsp.server.port=${port}`, `-Dorg.jboss.tools.rsp.id=${this.options.rspId}`, '-Dlogback.configurationFile=./conf/logback.xml',
+        //     '-jar', equinox, '-data', storagePath], { cwd: location, env: process.env });
         if(this.cpProcess) {
             if (this.cpProcess.stdout)
                 this.cpProcess.stdout.on('data', stdoutCallback);
