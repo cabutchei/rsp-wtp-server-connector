@@ -4,7 +4,7 @@
  *-----------------------------------------------------------------------------------------------*/
 
 import * as chai from 'chai';
-import { FelixRspController } from '../src/impl/controller';
+import { EquinoxRspController } from '../src/impl/controller';
 import * as sinon from 'sinon';
 import * as sinonChai from 'sinon-chai';
 import { ServerInfo } from 'rsp-wtp-server-connector-api';
@@ -15,7 +15,7 @@ chai.use(sinonChai);
 
 suite('Extension API', () => {
     let sandbox: sinon.SinonSandbox;
-    let extensionApi: FelixRspController;
+    let extensionApi: EquinoxRspController;
 
     const serverInfo: ServerInfo = {
         host: 'localhost',
@@ -26,7 +26,7 @@ suite('Extension API', () => {
 
     setup(() => {
         sandbox = sinon.createSandbox();
-        extensionApi = new FelixRspController(OPTIONS);
+        extensionApi = new EquinoxRspController(OPTIONS);
     });
 
     teardown(() => {

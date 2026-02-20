@@ -3,7 +3,7 @@
  *  Licensed under the EPL v2.0 License. See LICENSE file in the project root for license information.
  *-----------------------------------------------------------------------------------------------*/
 
-import { FelixRspController } from './controller';
+import { EquinoxRspController } from './controller';
 import * as vscode from 'vscode';
 import { API, retrieveUIExtension, RSPController, RSPServer, ServerState } from 'rsp-wtp-server-connector-api';
 import { EquinoxRspLauncherOptions } from './server';
@@ -12,12 +12,13 @@ import { getTelemetryServiceInstance, initializeTelemetry } from './telemetry';
 
 export const JAVA_DEBUG_EXTENSION = 'vscjava.vscode-java-debug';
 export const JAVA_EXTENSION = 'redhat.java';
+let activeController: EquinoxRspController | undefined;
 
 export async function activateImpl(context: vscode.ExtensionContext, 
     opts: EquinoxRspLauncherOptions): Promise<RSPController> {
     
     await initializeTelemetry(context);
-    const api: FelixRspController = new FelixRspController(opts);
+    const api: EquinoxRspController = new EquinoxRspController(opts);
     const rsp: RSPServer = {
         state: ServerState.UNKNOWN,
         type: {
@@ -31,6 +32,10 @@ export async function activateImpl(context: vscode.ExtensionContext,
         serverConnectorUI.api.registerRSPProvider(rsp);
     }
     registerRecommendations(context);
+    activeController = api;
+    context.subscriptions.push(new vscode.Disposable(() => {
+        void stopActiveController();
+    }));
     const storageUri = context.storageUri;
     if (!storageUri) {
         vscode.window.showErrorMessage('No workspace-specific storage available (probably no folder opened).');
@@ -43,9 +48,23 @@ export async function activateImpl(context: vscode.ExtensionContext,
 }
 
 export async function deactivateImpl(opts: EquinoxRspLauncherOptions): Promise<void> {
+    await stopActiveController();
     const serverConnector = await retrieveUIExtension();
     if (serverConnector.available) {
         serverConnector.api.deregisterRSPProvider(opts.providerId);
+    }
+}
+
+async function stopActiveController(): Promise<void> {
+    const controller = activeController;
+    activeController = undefined;
+    if (!controller) {
+        return;
+    }
+    try {
+        await controller.stopRSP();
+    } catch (error) {
+        console.error('Failed to stop RSP process during extension shutdown', error);
     }
 }
 

@@ -17,7 +17,7 @@ import * as fs from 'fs-extra';
 import { homedir } from 'os';
 import { ErrorMsgBtn, RequirementsResult, RspRequirementsRejection } from './requirements';
 import { Uri } from 'vscode';
-import { FelixRspController } from './controller';
+import { EquinoxRspController } from './controller';
 
 export interface HostPortSpawned {
     host: string;
@@ -49,7 +49,7 @@ export class EquinoxRspLauncher {
 
     public async start(stdoutCallback: (data: string) => void,
         stderrCallback: (data: string) => void,
-        api: FelixRspController): Promise<ServerInfo> {
+        api: EquinoxRspController): Promise<ServerInfo> {
 
         let requirementResult: RequirementsResult = undefined;
         try {
@@ -139,7 +139,7 @@ export class EquinoxRspLauncher {
         port: number, 
         javaHome: string,
         stdoutCallback: (data: string) => void, 
-        stderrCallback: (data: string) => void, api: FelixRspController): Promise<void> {
+        stderrCallback: (data: string) => void, api: EquinoxRspController): Promise<void> {
 
         const equinox = path.join(location, 'org.eclipse.equinox.launcher_1.5.300.v20190213-1655.jar');
         const java = path.join(javaHome, 'bin', 'java');
@@ -186,7 +186,7 @@ export class EquinoxRspLauncher {
         serverPort: number, 
         stdoutCallback: (data: string) => void,
         stderrCallback: (data: string) => void, 
-        api: FelixRspController): Promise<HostPortSpawned> {
+        api: EquinoxRspController): Promise<HostPortSpawned> {
 
         let localPort = serverPort;
         let localSpawned = false;

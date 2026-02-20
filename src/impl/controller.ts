@@ -8,7 +8,7 @@ import { Uri } from 'vscode';
 import { RSPController, ServerInfo, ServerState } from 'rsp-wtp-server-connector-api';
 import { EquinoxRspLauncher, EquinoxRspLauncherOptions } from './server';
 
-export class FelixRspController implements RSPController {
+export class EquinoxRspController implements RSPController {
     private opts: EquinoxRspLauncherOptions;
     private launcher: EquinoxRspLauncher;
     private host: string;
@@ -31,15 +31,15 @@ export class FelixRspController implements RSPController {
         this.updateRSPStateChanged(ServerState.STARTING);
         try {
             const startResult: ServerInfo = await this.launcher.start(stdoutCallback, stderrCallback, this);
-            if( startResult ) {
+            if(startResult) {
                 this.host = startResult.host;
                 this.port = startResult.port;
                 this.updateRSPStateChanged(ServerState.STARTED);
                 return startResult;
             } else {
-                return this.handleStartError("No result from launcher.start");
+                return this.handleStartError('No result from launcher.start');
             }
-        } catch( error) {
+        } catch(error) {
             return this.handleStartError(error);
         }
     }
@@ -62,7 +62,7 @@ export class FelixRspController implements RSPController {
             return null;
         }
         const toCall = this.opts.getImagePathForServerType;
-        if( !toCall ) {
+        if(!toCall) {
             return null;
         }
         return toCall(serverType);
