@@ -53,6 +53,7 @@
   "main": "./out/src/extension",
   "scripts": {
     "package": "node ./build/package.js",
+    "vscode:package": "node ./build/package-product.js",
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "clean": "rm -rf out || rmdir out /s /q",
