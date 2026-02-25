@@ -35,6 +35,7 @@
     "onCommand:wtp.server.publishFull",
     "onCommand:wtp.server.publishIncremental",
     "onCommand:wtp.server.actions",
+    "onCommand:wtp.serverConnector.openWorkspaceStorage",
     "onView:com.github.cabutchei.rsp.serversView"
   ],
   "categories": [
@@ -51,6 +52,14 @@
   ],
   "icon": "images/jboss.eap.png",
   "main": "./out/src/extension",
+  "contributes": {
+    "commands": [
+      {
+        "command": "wtp.serverConnector.openWorkspaceStorage",
+        "title": "WTP: Open Connector Workspace Storage"
+      }
+    ]
+  },
   "scripts": {
     "package": "node ./build/package.js",
     "vscode:package": "node ./build/package-product.js",

@@ -32,6 +32,15 @@ export async function activateImpl(context: vscode.ExtensionContext,
         serverConnectorUI.api.registerRSPProvider(rsp);
     }
     registerRecommendations(context);
+    context.subscriptions.push(vscode.commands.registerCommand('wtp.serverConnector.openWorkspaceStorage', async () => {
+        const storageUri = context.storageUri;
+        if (!storageUri) {
+            vscode.window.showErrorMessage('No workspace-specific storage available (probably no folder opened).');
+            return;
+        }
+        await vscode.workspace.fs.createDirectory(storageUri);
+        await vscode.commands.executeCommand('revealFileInOS', storageUri);
+    }));
     activeController = api;
     context.subscriptions.push(new vscode.Disposable(() => {
         void stopActiveController();
