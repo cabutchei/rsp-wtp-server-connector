@@ -1,138 +1,117 @@
-name: ServerConnectorCI
+name: Connector CI
 
 on:
-  push:
-    branches: [master]
   pull_request:
+    branches: [master]
+  push:
     branches: [master]
   workflow_dispatch:
     inputs:
-        publishToMarketPlace:
-          description: 'Publish to VS Code Marketplace ?'
-          required: true
-          type: choice
-          options:
-            - 'true'
-            - 'false'
-          default: 'false'
-        publishToOVSX:
-          description: 'Publish to OpenVSX Registry ?'
-          required: true
-          type: choice
-          options:
-            - 'true'
-            - 'false'
-          default: 'false'
+      publish_to_marketplace:
+        description: Publish to the VS Code Marketplace
+        required: true
+        type: boolean
+        default: false
+      publish_to_ovsx:
+        description: Publish to Open VSX
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
 jobs:
   test:
-    runs-on: ${{ matrix.os }} # runs a test on Ubuntu, Windows and macOS
-
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
-        node: [ 20 ]
-
+        node: ['20']
+      fail-fast: false
     steps:
-    # Checkout
-    - uses: actions/checkout@v4
-
-    # Setup node
-    - name: Setup node
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node }}
-
-    # Install from npm
-    - run: npm install
-
-    # Build the component
-    - run: npm run build
-    # Run Unit tests
-    - name: Run Unit tests
-      uses: GabrielBB/xvfb-action@v1.0
-      with:
-        run: npm test
-
-    # Run UI tests
-    - name: Run UI tests
-      if: runner.os == 'Linux'
-      uses: GabrielBB/xvfb-action@v1.0
-      with:
-        run: npm run public-ui-test
-
-    # Archive test artifacts
-    - name: Archiving test artifacts
-      uses: actions/upload-artifact@v4
-      if: failure()
-      with: 
-        name: artifacts-${{ matrix.os }}
-        path: |
-          test-resources/screenshots/*.png
-        retention-days: 2
-
-    # Upload code coverage
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage/coverage-final.json
-
-  packaging-job:
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'schedule' }}
-    steps:
-      - name: Checkout vscode-server-connector
-        uses: actions/checkout@v4
-      - name: Set Up NodeJS
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-      - name: Install NodeJS dependencies
-        run: npm install -g typescript "@vscode/vsce" "ovsx"
-      - name: Cache Version
-        run: |
-          echo "EXT_VERSION=$(cat package.json | jq -r .version)" >> $GITHUB_ENV
-      - name: Build vscode-server-connector
-        run: |
-          npm install
-          npm run build
-      - name: Package vscode-server-connector
-        run: |
-          vsce package -o vscode-server-connector-${{ env.EXT_VERSION }}.vsix
-          ls -lash *.vsix
-      - name: Upload VSIX Artifacts
+          node-version: ${{ matrix.node }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Run unit tests
+        uses: GabrielBB/xvfb-action@v1.0
+        with:
+          run: npm test
+      - name: Run public UI tests
+        if: runner.os == 'Linux'
+        uses: GabrielBB/xvfb-action@v1.0
+        with:
+          run: npm run public-ui-test
+      - name: Archive test artifacts
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: vscode-server-connector
+          name: artifacts-${{ matrix.os }}
           path: |
-            vscode-server-connector-${{ env.EXT_VERSION }}.vsix
-          if-no-files-found: error
-  release-job:
-    environment: ${{ (inputs.publishToMarketPlace == 'true' || inputs.publishToOVSX == 'true') && 'release' }}
+            test-resources/screenshots/*.png
+          retention-days: 2
+
+  package:
     runs-on: ubuntu-latest
-    needs: packaging-job
     steps:
-      - name: Set Up NodeJS
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
+      - name: Install packaging tools
+        run: npm install -g @vscode/vsce ovsx
       - name: Install dependencies
+        run: npm ci
+      - name: Build extension
+        run: npm run build
+      - name: Materialize packaged server
+        run: npm run package
+      - name: Cache extension version
+        run: echo "EXT_VERSION=$(node -p \"require('./package.json').version\")" >> "${GITHUB_ENV}"
+      - name: Package connector VSIX
         run: |
-          npm install -g typescript "@vscode/vsce" "ovsx"
-      - name: Download VSIX
+          mkdir -p dist
+          vsce package --out "dist/rsp-wtp-server-connector-${EXT_VERSION}.vsix"
+          ls -lash dist/*.vsix
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsp-wtp-server-connector
+          path: dist/rsp-wtp-server-connector-${{ env.EXT_VERSION }}.vsix
+          if-no-files-found: error
+
+  publish:
+    if: inputs.publish_to_marketplace == true || inputs.publish_to_ovsx == true
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install publishing tools
+        run: npm install -g @vscode/vsce ovsx
+      - name: Download VSIX artifact
         uses: actions/download-artifact@v4
+        with:
+          name: rsp-wtp-server-connector
+          path: dist
       - name: Publish to VS Code Marketplace
-        if: ${{ inputs.publishToMarketPlace == 'true' }}
+        if: inputs.publish_to_marketplace == true
         run: |
-          ls -la #debug
-          for platformVsix in vscode-server-connector/*.vsix; do
-            echo "Running command: vsce publish --skip-duplicate -p SOME_SECRET --packagePath ${platformVsix}"
-            vsce publish --skip-duplicate -p ${{ secrets.VSCODE_MARKETPLACE_TOKEN }} --packagePath ${platformVsix}
+          for vsix in dist/*.vsix; do
+            vsce publish --skip-duplicate -p "${{ secrets.VSCODE_MARKETPLACE_TOKEN }}" --packagePath "${vsix}"
           done
-      - name: Publish to OpenVSX Registry
-        if: ${{ inputs.publishToOVSX == 'true' }}
+      - name: Publish to Open VSX
+        if: inputs.publish_to_ovsx == true
         run: |
-          ls -la #debug
-          for platformVsix in vscode-server-connector/*.vsix; do
-            echo "Running command: ovsx publish --skip-duplicate -p SOME_SECRET --packagePath ${platformVsix}"
-            ovsx publish --skip-duplicate -p ${{ secrets.OVSX_MARKETPLACE_TOKEN }} --packagePath ${platformVsix}
+          for vsix in dist/*.vsix; do
+            ovsx publish --skip-duplicate -p "${{ secrets.OVSX_MARKETPLACE_TOKEN }}" --packagePath "${vsix}"
           done
