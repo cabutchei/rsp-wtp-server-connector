@@ -10,3 +10,4 @@ test-resources/
 *.tgz
 .nyc_output/
 LATEST
+.DS_Store
