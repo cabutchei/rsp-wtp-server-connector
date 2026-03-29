@@ -10,14 +10,14 @@ import * as path from 'path';
 import * as portfinder from 'portfinder';
 import * as requirements from './requirements';
 import * as vscode from 'vscode';
-import { ServerInfo, ServerState } from 'vscode-server-connector-api';
+import { ServerInfo, ServerState } from 'rsp-wtp-server-connector-api';
 import * as waitOn from 'wait-on';
 import * as tcpPort from 'tcp-port-used';
 import * as fs from 'fs-extra';
 import { homedir } from 'os';
 import { ErrorMsgBtn, RequirementsResult, RspRequirementsRejection } from './requirements';
 import { Uri } from 'vscode';
-import { FelixRspController } from './controller';
+import { EquinoxRspController } from './controller';
 
 export interface HostPortSpawned {
     host: string;
@@ -25,7 +25,7 @@ export interface HostPortSpawned {
     spawned: boolean;
 }
 
-export interface FelixRspLauncherOptions {
+export interface EquinoxRspLauncherOptions {
     providerId: string;
     providerName: string;
     rspId: string;
@@ -37,34 +37,34 @@ export interface FelixRspLauncherOptions {
     getImagePathForServerType: (serverType: string) => Uri;
 }
 
-export class FelixRspLauncher {
-    private options: FelixRspLauncherOptions;
+export class EquinoxRspLauncher {
+    private options: EquinoxRspLauncherOptions;
     private cpProcess: cp.ChildProcess;
     private javaHome: string;
     private port: number;
     private spawned: boolean;
-    constructor(options: FelixRspLauncherOptions ) {
+    constructor(options: EquinoxRspLauncherOptions) {
         this.options = options;
     }
 
     public async start(stdoutCallback: (data: string) => void,
         stderrCallback: (data: string) => void,
-        api: FelixRspController): Promise<ServerInfo> {
+        api: EquinoxRspController): Promise<ServerInfo> {
 
         let requirementResult: RequirementsResult = undefined;
         try {
             requirementResult = await requirements.resolveRequirements(this.options.minimumSupportedJava);
-        } catch( err ) {
+        } catch(err) {
             return Promise.reject(err);
         }
-        if( !requirementResult) {
-            return Promise.reject("Unable to find java_home and java version, reason unknown");
+        if(!requirementResult) {
+            return Promise.reject('Unable to find java_home and java version, reason unknown');
         }
-        if( requirementResult.unexpectedError) {
+        if(requirementResult.unexpectedError) {
             return Promise.reject(requirementResult.unexpectedError);
         }
 
-        if( requirementResult.rejection ) {
+        if(requirementResult.rejection) {
             const rejection: RspRequirementsRejection = requirementResult.rejection;
             this.displayRequirementRejection(rejection);
             return;
@@ -123,23 +123,37 @@ export class FelixRspLauncher {
 
     private getServerLocation(process: NodeJS.Process): string {
         return process.env.RSP_SERVER_LOCATION ?
-            process.env.RSP_SERVER_LOCATION : path.resolve(__dirname, '..', '..', '..', 'server');
+            process.env.RSP_SERVER_LOCATION : path.resolve(__dirname, '..', '..', '..', 'server', 'plugins');
     }
 
-    private startServer(
+    private async getDebugPort(): Promise<number> {
+        if (process.env.RSP_DEBUG_PORT) {
+            return +process.env.RSP_DEBUG_PORT;
+        }
+        return await portfinder.getPortPromise(
+            {port: this.options.minPort, stopPort: this.options.maxPort});
+    }
+
+    private async startServer(
         location: string, 
         port: number, 
         javaHome: string,
         stdoutCallback: (data: string) => void, 
-        stderrCallback: (data: string) => void, api: FelixRspController): void {
+        stderrCallback: (data: string) => void, api: EquinoxRspController): Promise<void> {
 
-        const felix = path.join(location, 'bin', 'felix.jar');
+        const equinox = path.join(location, 'org.eclipse.equinox.launcher_1.5.300.v20190213-1655.jar');
         const java = path.join(javaHome, 'bin', 'java');
+        const storagePath = process.env['VSCODE_STORAGE_PATH'];
         // Debuggable version
-        // const process = cp.spawn(java, [`-Xdebug`, `-Xrunjdwp:transport=dt_socket,server=y,address=8001,suspend=y`, `-Drsp.server.port=${port}`, '-jar', felix], { cwd: location });
+        const suspend = 'n';
+        const debugPort = await this.getDebugPort();
+        const consoleLog = '-consoleLog';
+        const args: string[] = [`-agentlib:jdwp=transport=dt_socket,server=y,address=${debugPort},suspend=${suspend}`, `-Drsp.server.port=${port}`,
+            '-jar', equinox, '-data', storagePath, consoleLog];
+        this.cpProcess = cp.spawn(java, args, { cwd: location });
         // Production version
-        this.cpProcess = cp.spawn(java, [`-Drsp.server.port=${port}`, `-Dorg.jboss.tools.rsp.id=${this.options.rspId}`, '-Dlogback.configurationFile=./conf/logback.xml', '-jar', felix], 
-            { cwd: location, env: process.env });
+        // this.cpProcess = cp.spawn(java, [`-Drsp.server.port=${port}`, `-Dorg.jboss.tools.rsp.id=${this.options.rspId}`, '-Dlogback.configurationFile=./conf/logback.xml',
+        //     '-jar', equinox, '-data', storagePath], { cwd: location, env: process.env });
         if(this.cpProcess) {
             if (this.cpProcess.stdout)
                 this.cpProcess.stdout.on('data', stdoutCallback);
@@ -172,7 +186,7 @@ export class FelixRspLauncher {
         serverPort: number, 
         stdoutCallback: (data: string) => void,
         stderrCallback: (data: string) => void, 
-        api: FelixRspController): Promise<HostPortSpawned> {
+        api: EquinoxRspController): Promise<HostPortSpawned> {
 
         let localPort = serverPort;
         let localSpawned = false;
@@ -207,13 +221,13 @@ export class FelixRspLauncher {
             host: 'localhost',
             port: localPort,
             spawned: localSpawned,
-        }
+        };
         return ret;
     }
     private displayRequirementRejection(error: RspRequirementsRejection) {
-        if( error ) {
-            let msg = error.message;
-            let buttonArray: ErrorMsgBtn[] = error.btns || [];
+        if(error) {
+            const msg = error.message;
+            const buttonArray: ErrorMsgBtn[] = error.btns || [];
             const buttonLabels:string[] = buttonArray.map(btn => btn.label);
             // show error
             vscode.window.showErrorMessage(msg, ...buttonLabels)
@@ -224,8 +238,8 @@ export class FelixRspLauncher {
                             vscode.commands.executeCommand('vscode.open', btnSelected.openUrl);
                         } else {
                             vscode.window.showInformationMessage(
-                                `To configure Java for the JBoss Toolkit Extension, add "rsp-ui.rsp.java.home" property to your settings file
-                        (ex. "rsp-ui.rsp.java.home": "/usr/local/java/jdk-${this.options.minimumSupportedJava}.0.1").`);
+                                `To configure Java for the RSP-WTP Server Connectors Extension, add "rsp-wtp-ui.rsp.java.home" property to your settings file
+                        (ex. "rsp-wtp-ui.rsp.java.home": "/usr/local/java/jdk-${this.options.minimumSupportedJava}.0.1").`);
                             vscode.commands.executeCommand(
                                 'workbench.action.openSettingsJson'
                             );

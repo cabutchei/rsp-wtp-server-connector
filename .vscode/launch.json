@@ -6,17 +6,25 @@
 	"version": "0.2.0",
     "configurations": [
         {
-            "name": "Extension",
+            "name": "Run Extension",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}"
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionDevelopmentPath=${workspaceFolder}/../rsp-wtp-ui"
             ],
             "outFiles": [
-                "${workspaceFolder}/out/**/*.js"
+                "${workspaceFolder}/out/**/*.js",
+                "${workspaceFolder}/../rsp-wtp-ui/out/**/*.js"
             ],
-            "preLaunchTask": "npm: watch"
+            "preLaunchTask": "tsc: watch",
+            "env": {
+                "RSP_SERVER_LOCATION": "${workspaceFolder}/../rsp-wtp-server/distribution/distribution/target/products/com.github.cabutchei.rsp.server.product/macosx/cocoa/x86_64/rsp-wtp-server.app/Contents/Eclipse/plugins",
+                "RSP_DEBUG_PORT": "5007",
+                "JAVA_HOME": "${userHome}/.sdkman/candidates/java/17.0.12-oracle/",
+                "EQUINOX_LAUNCH_SCRIPT": "{userHome}/Documents/vs_code/rsp-wtp-server/rsp-wtp-server/launch/run.sh"
+            }
         },
         {
             "name": "Extension Tests Debug",
@@ -30,7 +38,7 @@
             "outFiles": [
                 "${workspaceFolder}/out/test/**/*.js"
             ],
-            "preLaunchTask": "npm: watch",
+            // "preLaunchTask": "npm: watch",
             "env": {
                 "VSCA_TEST_MODE": "debug"
             }

@@ -1,4 +1,4 @@
-# Change Log
+<!-- # Change Log
 
 ## 0.25.2
 Upversion to use latest rsp-server
@@ -72,4 +72,4 @@ Upversion to use latest rsp-server
 - Support for different Wildfly versions
 - Supoort for minishift
 
-
+ -->

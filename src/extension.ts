@@ -4,7 +4,7 @@
  *-----------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { RSPController } from 'vscode-server-connector-api';
+import { RSPController } from 'rsp-wtp-server-connector-api';
 import { OPTIONS } from './constants';
 import { activateImpl, deactivateImpl } from './impl/extensionImpl';
 

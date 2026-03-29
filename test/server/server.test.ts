@@ -31,7 +31,7 @@ suite('Server Tests', () => {
         test('error if resolveRequirement fails', async () => {
             sandbox.stub(requirements, 'resolveRequirements').rejects({ message: 'error', btns: [{ label: 'label'}]});
             try {
-                const launcher = new server.FelixRspLauncher(OPTIONS);
+                const launcher = new server.EquinoxRspLauncher(OPTIONS);
                 await launcher.start(stdCallback, stdCallback, null);
                 expect.fail('No error was thrown');
             } catch (err) {

@@ -3,21 +3,22 @@
  *  Licensed under the EPL v2.0 License. See LICENSE file in the project root for license information.
  *-----------------------------------------------------------------------------------------------*/
 
-import { FelixRspController } from './controller';
+import { EquinoxRspController } from './controller';
 import * as vscode from 'vscode';
-import { API, retrieveUIExtension, RSPController, RSPServer, ServerState } from 'vscode-server-connector-api';
-import { FelixRspLauncherOptions } from './server';
+import { API, retrieveUIExtension, RSPController, RSPServer, ServerState } from 'rsp-wtp-server-connector-api';
+import { EquinoxRspLauncherOptions } from './server';
 import { IRecommendationService, RecommendationCore } from '@redhat-developer/vscode-extension-proposals/lib';
 import { getTelemetryServiceInstance, initializeTelemetry } from './telemetry';
 
-export const JAVA_DEBUG_EXTENSION: string = 'vscjava.vscode-java-debug';
-export const JAVA_EXTENSION: string = 'redhat.java';
+export const JAVA_DEBUG_EXTENSION = 'vscjava.vscode-java-debug';
+export const JAVA_EXTENSION = 'redhat.java';
+let activeController: EquinoxRspController | undefined;
 
 export async function activateImpl(context: vscode.ExtensionContext, 
-    opts: FelixRspLauncherOptions): Promise<RSPController> {
+    opts: EquinoxRspLauncherOptions): Promise<RSPController> {
     
     await initializeTelemetry(context);
-    const api: FelixRspController = new FelixRspController(opts);
+    const api: EquinoxRspController = new EquinoxRspController(opts);
     const rsp: RSPServer = {
         state: ServerState.UNKNOWN,
         type: {
@@ -31,25 +32,59 @@ export async function activateImpl(context: vscode.ExtensionContext,
         serverConnectorUI.api.registerRSPProvider(rsp);
     }
     registerRecommendations(context);
+    context.subscriptions.push(vscode.commands.registerCommand('wtp.serverConnector.openWorkspaceStorage', async () => {
+        const storageUri = context.storageUri;
+        if (!storageUri) {
+            vscode.window.showErrorMessage('No workspace-specific storage available (probably no folder opened).');
+            return;
+        }
+        await vscode.workspace.fs.createDirectory(storageUri);
+        await vscode.commands.executeCommand('revealFileInOS', storageUri);
+    }));
+    activeController = api;
+    context.subscriptions.push(new vscode.Disposable(() => {
+        void stopActiveController();
+    }));
+    const storageUri = context.storageUri;
+    if (!storageUri) {
+        vscode.window.showErrorMessage('No workspace-specific storage available (probably no folder opened).');
+        return;
+    }
+    await vscode.workspace.fs.createDirectory(storageUri);
+    process.env['VSCODE_STORAGE_PATH'] = storageUri.path;
 
     return api;
 }
 
-export async function deactivateImpl(opts: FelixRspLauncherOptions): Promise<void> {
+export async function deactivateImpl(opts: EquinoxRspLauncherOptions): Promise<void> {
+    await stopActiveController();
     const serverConnector = await retrieveUIExtension();
     if (serverConnector.available) {
         serverConnector.api.deregisterRSPProvider(opts.providerId);
     }
 }
 
+async function stopActiveController(): Promise<void> {
+    const controller = activeController;
+    activeController = undefined;
+    if (!controller) {
+        return;
+    }
+    try {
+        await controller.stopRSP();
+    } catch (error) {
+        console.error('Failed to stop RSP process during extension shutdown', error);
+    }
+}
+
 async function registerRecommendations(context: vscode.ExtensionContext) {
     const telem = await getTelemetryServiceInstance();
     const recommendService: IRecommendationService | undefined = RecommendationCore.getService(context, telem);
-    if( recommendService ) {
-        const r1 = recommendService.create(JAVA_EXTENSION, "Language Support for Java", 
-            "'Language Support for Java' is recommended for a better development environment experience when developing applications targeted to Java-based application servers .", true);
-        const r2 = recommendService.create(JAVA_DEBUG_EXTENSION, "Debugger for Java", 
-            "'Debugger for Java' is required to launch a server in debug mode and connect to it with a debugger.", true);
+    if(recommendService) {
+        const r1 = recommendService.create(JAVA_EXTENSION, 'Language Support for Java', 
+            '\'Language Support for Java\' is recommended for a better development environment experience when developing applications targeted to Java-based application servers .', true);
+        const r2 = recommendService.create(JAVA_DEBUG_EXTENSION, 'Debugger for Java', 
+            '\'Debugger for Java\' is required to launch a server in debug mode and connect to it with a debugger.', true);
         recommendService.register([r1, r2]);
     }
 }
