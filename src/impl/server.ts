@@ -204,8 +204,7 @@ export class EquinoxRspLauncher {
             if(lockFileExist && !portInUse) {
                 fs.unlinkSync(lockFile);
             }
-            // localPort = serverPort;
-            localPort = 27511;
+            localPort = serverPort;
             const serverLocation = this.getServerLocation(process);
             this.startServer(serverLocation, localPort, this.javaHome, stdoutCallback, stderrCallback, api);
             localSpawned = true;
