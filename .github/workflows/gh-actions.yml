@@ -74,7 +74,9 @@ jobs:
       - name: Materialize packaged server
         run: npm run package
       - name: Cache extension version
-        run: echo "EXT_VERSION=$(node -p \"require('./package.json').version\")" >> "${GITHUB_ENV}"
+        run: |
+          EXT_VERSION="$(node -p "require('./package.json').version")"
+          echo "EXT_VERSION=${EXT_VERSION}" >> "${GITHUB_ENV}"
       - name: Package connector VSIX
         run: |
           mkdir -p dist
