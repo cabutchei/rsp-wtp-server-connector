@@ -1,6 +1,6 @@
 {
-  "name": "rsp-wtp-server-connector",
-  "displayName": "Websphere Tools",
+  "name": "wtp-rsp-server-connector",
+  "displayName": "WTP RSP Server Connector",
   "description": "Allows a user to start, stop and deploy to IBM server and runtime products like WebSphere Application Server and Liberty.",
   "version": "0.1.0",
   "license": "SEE LICENSE IN LICENSE",
@@ -76,10 +76,10 @@
     "lint": "eslint src test --fix"
   },
   "extensionPack": [
-    "cabutchei.rsp-wtp-ui"
+    "cabutchei.wtp-rsp-ui"
   ],
   "extensionDependencies": [
-    "cabutchei.rsp-wtp-ui"
+    "cabutchei.wtp-rsp-ui"
   ],
   "devDependencies": {
     "@redhat-developer/locators": "^1.5.0",
