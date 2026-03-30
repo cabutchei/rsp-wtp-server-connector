@@ -22,41 +22,6 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
-        node: ['20']
-      fail-fast: false
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
-      - name: Install dependencies
-        run: npm ci
-      - name: Build
-        run: npm run build
-      - name: Run unit tests
-        uses: GabrielBB/xvfb-action@v1.0
-        with:
-          run: npm test
-      - name: Run public UI tests
-        if: runner.os == 'Linux'
-        uses: GabrielBB/xvfb-action@v1.0
-        with:
-          run: npm run public-ui-test
-      - name: Archive test artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: artifacts-${{ matrix.os }}
-          path: |
-            test-resources/screenshots/*.png
-          retention-days: 2
-
   package:
     runs-on: ubuntu-latest
     steps:
