@@ -10,7 +10,7 @@ import { EquinoxRspLauncherOptions } from './impl/server';
 /**
  * RSP Provider ID
  */
-const RSP_PROVIDER_ID = 'cabutchei.rsp-wtp-server-connector';
+const RSP_PROVIDER_ID = 'cabutchei.wtp-rsp-server-connector';
 /**
  * RSP Provider Name - it will be displayed in the tree node
  */
@@ -19,7 +19,7 @@ const RSP_PROVIDER_NAME = 'RSP-WTP Server Connectors';
 /**
  * The provider id to be used in the .rsp folder
  */
-const RSP_ID = 'cabutchei-rsp-wtp-server-connector';
+const RSP_ID = 'cabutchei-wtp-rsp-server-connector';
 
 /**
  * The minimum port for this rsp instance to avoid clobbering

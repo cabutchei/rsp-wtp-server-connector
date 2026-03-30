@@ -1,4 +1,5 @@
 .vscode/**
+.github/**
 .vscode-test/**
 out/test/**
 out/src/ui-test/**
@@ -12,7 +13,10 @@ tslint.json
 org.jboss.tools.rsp.distribution*.zip
 *.vsix
 build/**
+dist/**
 coverage/**
+exts/**
+exts.zip
 images/vscode-adapters.gif
 test/**
 .travis.yml
@@ -22,3 +26,5 @@ screencast/
 *.tgz
 .nyc_output/**
 .eslintrc.json
+.DS_Store
+npmUpversionMicroTagPush.sh

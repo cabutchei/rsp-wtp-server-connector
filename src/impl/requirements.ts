@@ -86,7 +86,7 @@ async function checkJavaRuntime(): Promise<string | RspRequirementsRejection> {
     let source: string;
     let javaHome: string | undefined = readJavaConfig();
     if (javaHome) {
-        source = 'The rsp-wtp-ui.rsp.java.home variable defined in VS Code settings';
+        source = 'The wtp-rsp-ui.rsp.java.home variable defined in VS Code settings';
     } else {
         javaHome = process.env.JDK_HOME;
         if (javaHome) {
@@ -123,7 +123,7 @@ async function checkJavaRuntime(): Promise<string | RspRequirementsRejection> {
 }
 function readJavaConfig(): string | undefined {
     const config = workspace.getConfiguration();
-    const ret = config.get<string | undefined>('rsp-wtp-ui.rsp.java.home', undefined);
+    const ret = config.get<string | undefined>('wtp-rsp-ui.rsp.java.home', undefined);
     if(ret)
         return ret;
     // Backwards compatibility
