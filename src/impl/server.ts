@@ -126,12 +126,22 @@ export class EquinoxRspLauncher {
             process.env.RSP_SERVER_LOCATION : path.resolve(__dirname, '..', '..', '..', 'server', 'plugins');
     }
 
-    private async getDebugPort(): Promise<number> {
+    private async getDebugPort(excludedPort?: number): Promise<number> {
         if (process.env.RSP_DEBUG_PORT) {
             return +process.env.RSP_DEBUG_PORT;
         }
-        return await portfinder.getPortPromise(
-            {port: this.options.minPort, stopPort: this.options.maxPort});
+        let candidatePort = this.options.minPort;
+        while (candidatePort <= this.options.maxPort) {
+            const debugPort = await portfinder.getPortPromise({
+                port: candidatePort,
+                stopPort: this.options.maxPort
+            });
+            if (debugPort !== excludedPort) {
+                return debugPort;
+            }
+            candidatePort = debugPort + 1;
+        }
+        return Promise.reject('Could not allocate a dedicated debug port for the rsp server.');
     }
 
     private async startServer(
@@ -146,7 +156,7 @@ export class EquinoxRspLauncher {
         const storagePath = process.env['VSCODE_STORAGE_PATH'];
         // Debuggable version
         const suspend = 'n';
-        const debugPort = await this.getDebugPort();
+        const debugPort = await this.getDebugPort(port);
         const consoleLog = '-consoleLog';
         const args: string[] = [`-agentlib:jdwp=transport=dt_socket,server=y,address=${debugPort},suspend=${suspend}`, `-Drsp.server.port=${port}`,
             '-jar', equinox, '-data', storagePath, consoleLog];
