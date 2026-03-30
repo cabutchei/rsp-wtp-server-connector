@@ -2,7 +2,7 @@
   "name": "wtp-rsp-server-connector",
   "displayName": "WTP RSP Server Connector",
   "description": "Allows a user to start, stop and deploy to IBM server and runtime products like WebSphere Application Server and Liberty.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "SEE LICENSE IN LICENSE",
   "publisher": "cabutchei",
   "author": "cabutchei",
