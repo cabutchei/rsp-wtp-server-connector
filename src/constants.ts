@@ -64,7 +64,7 @@ export const OPTIONS: EquinoxRspLauncherOptions = {
     maxPort: RSP_MAX_PORT,
     connectionDelay: RSP_CONNECTION_DELAY,
     connectionPollFrequency: RSP_CONNECTION_POLL_INTERVAL,
-    minimumSupportedJava: 8,
+    minimumSupportedJava: 21,
     getImagePathForServerType: function (serverType: string): Uri {
         const tmpPath: string = getImageFilenameForServerType(serverType);
         if(tmpPath)
