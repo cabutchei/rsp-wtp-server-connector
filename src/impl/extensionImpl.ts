@@ -8,7 +8,6 @@ import * as vscode from 'vscode';
 import { API, retrieveUIExtension, RSPController, RSPServer, ServerState } from 'rsp-wtp-server-connector-api';
 import { EquinoxRspLauncherOptions } from './server';
 import { IRecommendationService, RecommendationCore } from '@redhat-developer/vscode-extension-proposals/lib';
-import { getTelemetryServiceInstance, initializeTelemetry } from './telemetry';
 
 export const JAVA_DEBUG_EXTENSION = 'vscjava.vscode-java-debug';
 export const JAVA_EXTENSION = 'redhat.java';
@@ -17,7 +16,6 @@ let activeController: EquinoxRspController | undefined;
 export async function activateImpl(context: vscode.ExtensionContext, 
     opts: EquinoxRspLauncherOptions): Promise<RSPController> {
     
-    await initializeTelemetry(context);
     const api: EquinoxRspController = new EquinoxRspController(opts);
     const rsp: RSPServer = {
         state: ServerState.UNKNOWN,
@@ -78,8 +76,7 @@ async function stopActiveController(): Promise<void> {
 }
 
 async function registerRecommendations(context: vscode.ExtensionContext) {
-    const telem = await getTelemetryServiceInstance();
-    const recommendService: IRecommendationService | undefined = RecommendationCore.getService(context, telem);
+    const recommendService: IRecommendationService | undefined = RecommendationCore.getService(context);
     if(recommendService) {
         const r1 = recommendService.create(JAVA_EXTENSION, 'Language Support for Java', 
             '\'Language Support for Java\' is recommended for a better development environment experience when developing applications targeted to Java-based application servers .', true);

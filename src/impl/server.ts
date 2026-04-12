@@ -38,6 +38,8 @@ export interface EquinoxRspLauncherOptions {
 }
 
 export class EquinoxRspLauncher {
+    private static readonly MAX_HEAP_ARG = '-Xmx1G';
+    private static readonly SERVER_VMARGS_SETTING = 'wtp-rsp-server-connector.rsp.server.vmargs';
     private options: EquinoxRspLauncherOptions;
     private cpProcess: cp.ChildProcess;
     private javaHome: string;
@@ -96,6 +98,30 @@ export class EquinoxRspLauncher {
         return lockFile;
     }
 
+    private getConfiguredDebugOptionsFile(): string | undefined {
+        const envVars = [
+            'RSP_DEBUG_OPTIONS_FILE',
+            'RSP_DEBUG_OPTIONS',
+            'EQUINOX_DEBUG_OPTIONS_FILE',
+            'EQUINOX_DEBUG_OPTIONS'
+        ];
+        for (const envVar of envVars) {
+            const configuredPath = process.env[envVar];
+            if (configuredPath && configuredPath.trim()) {
+                return configuredPath.trim();
+            }
+        }
+        return undefined;
+    }
+
+    private getEquinoxDebugArgs(): string[] {
+        const debugOptionsFile = this.getConfiguredDebugOptionsFile();
+        if (!debugOptionsFile) {
+            return [];
+        }
+        return ['-debug', debugOptionsFile];
+    }
+
     private lockFileExists(lockFile: string): boolean {
         if (fs.existsSync(lockFile)) {
             return true;
@@ -126,22 +152,16 @@ export class EquinoxRspLauncher {
             process.env.RSP_SERVER_LOCATION : path.resolve(__dirname, '..', '..', '..', 'server', 'plugins');
     }
 
-    private async getDebugPort(excludedPort?: number): Promise<number> {
-        if (process.env.RSP_DEBUG_PORT) {
-            return +process.env.RSP_DEBUG_PORT;
+    private getServerVmArgs(): string[] {
+        const configuredVmArgs = vscode.workspace.getConfiguration().get<string | null>(EquinoxRspLauncher.SERVER_VMARGS_SETTING, null);
+        if (!configuredVmArgs || !configuredVmArgs.trim()) {
+            return [];
         }
-        let candidatePort = this.options.minPort;
-        while (candidatePort <= this.options.maxPort) {
-            const debugPort = await portfinder.getPortPromise({
-                port: candidatePort,
-                stopPort: this.options.maxPort
-            });
-            if (debugPort !== excludedPort) {
-                return debugPort;
-            }
-            candidatePort = debugPort + 1;
+        const parsedVmArgs = configuredVmArgs.match(/(?:[^\s"]+|"[^"]*")+/g);
+        if (!parsedVmArgs) {
+            return [];
         }
-        return Promise.reject('Could not allocate a dedicated debug port for the rsp server.');
+        return parsedVmArgs.map(arg => arg.replace(/^"|"$/g, ''));
     }
 
     private async startServer(
@@ -155,15 +175,19 @@ export class EquinoxRspLauncher {
         const java = path.join(javaHome, 'bin', 'java');
         const storagePath = process.env['VSCODE_STORAGE_PATH'];
         // Debuggable version
-        const suspend = 'n';
-        const debugPort = await this.getDebugPort(port);
         const consoleLog = '-consoleLog';
-        const args: string[] = [`-agentlib:jdwp=transport=dt_socket,server=y,address=${debugPort},suspend=${suspend}`, `-Drsp.server.port=${port}`,
-            '-jar', equinox, '-data', storagePath, consoleLog];
+        const args: string[] = [
+            EquinoxRspLauncher.MAX_HEAP_ARG,
+            ...this.getServerVmArgs(),
+            `-Drsp.server.port=${port}`,
+            '-jar',
+            equinox,
+            '-data',
+            storagePath,
+            ...this.getEquinoxDebugArgs(),
+            consoleLog
+        ];
         this.cpProcess = cp.spawn(java, args, { cwd: location });
-        // Production version
-        // this.cpProcess = cp.spawn(java, [`-Drsp.server.port=${port}`, `-Dorg.jboss.tools.rsp.id=${this.options.rspId}`, '-Dlogback.configurationFile=./conf/logback.xml',
-        //     '-jar', equinox, '-data', storagePath], { cwd: location, env: process.env });
         if(this.cpProcess) {
             if (this.cpProcess.stdout)
                 this.cpProcess.stdout.on('data', stdoutCallback);
@@ -248,8 +272,8 @@ export class EquinoxRspLauncher {
                             vscode.commands.executeCommand('vscode.open', btnSelected.openUrl);
                         } else {
                             vscode.window.showInformationMessage(
-                                `To configure Java for the RSP-WTP Server Connectors Extension, add "rsp-wtp-ui.rsp.java.home" property to your settings file
-                        (ex. "rsp-wtp-ui.rsp.java.home": "/usr/local/java/jdk-${this.options.minimumSupportedJava}.0.1").`);
+                                `To configure Java for the RSP-WTP Server Connectors Extension, add "wtp-rsp-ui.rsp.java.home" property to your settings file
+                        (ex. "wtp-rsp-ui.rsp.java.home": "/usr/local/java/jdk-${this.options.minimumSupportedJava}.0.1").`);
                             vscode.commands.executeCommand(
                                 'workbench.action.openSettingsJson'
                             );
