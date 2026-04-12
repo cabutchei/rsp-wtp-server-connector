@@ -2,7 +2,7 @@
   "name": "wtp-rsp-server-connector",
   "displayName": "WTP RSP Server Connector",
   "description": "Allows a user to start, stop and deploy to IBM server and runtime products like WebSphere Application Server and Liberty.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "license": "SEE LICENSE IN LICENSE",
   "publisher": "cabutchei",
   "author": "cabutchei",
@@ -50,7 +50,7 @@
     "websphere",
     "was"
   ],
-  "icon": "images/jboss.eap.png",
+  "icon": "images/wtp_rsp_server_connector.png",
   "main": "./out/src/extension",
   "contributes": {
     "commands": [
@@ -58,11 +58,26 @@
         "command": "wtp.serverConnector.openWorkspaceStorage",
         "title": "WTP: Open Connector Workspace Storage"
       }
-    ]
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "WTP RSP Server Connector",
+      "properties": {
+        "wtp-rsp-server-connector.rsp.server.vmargs": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Extra JVM arguments used to launch the bundled WTP-RSP server. For example: `-Xmx2G -Dfoo=bar`. Requires restarting the RSP provider."
+        }
+      }
+    }
   },
   "scripts": {
     "package": "node ./build/package.js",
     "vscode:package": "node ./build/package-product.js",
+    "vscode:package-local": "node ./build/package-local-product.js",
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "clean": "rm -rf out || rmdir out /s /q",
@@ -114,14 +129,13 @@
   },
   "dependencies": {
     "@redhat-developer/vscode-extension-proposals": "^0.0.22",
-    "@redhat-developer/vscode-redhat-telemetry": "0.4.2",
     "expand-home-dir": "0.0.3",
     "find-java-home": "^1.2.2",
     "fs-extra": "10.0.0",
     "path-exists": "^4.0.0",
     "portfinder": "^1.0.28",
-    "tcp-port-used": "^1.0.2",
     "rsp-wtp-server-connector-api": "0.2.0",
+    "tcp-port-used": "^1.0.2",
     "wait-on": "^5.2.1"
   }
 }
