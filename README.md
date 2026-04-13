@@ -1,69 +1,68 @@
-# JBoss Toolkit
+# WTP RSP Server Connector
 
-<!-- [![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/redhat.vscode-server-connector?style=for-the-badge&label=VS%20Marketplace&logo=visual-studio-code&color=blue)](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-server-connector)
-[![Downloads](https://img.shields.io/visual-studio-marketplace/d/redhat.vscode-server-connector?style=for-the-badge&color=purple)](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-server-connector)
-[![License](https://img.shields.io/badge/license-EPLv2.0-brightgreen.png?style=for-the-badge)](https://github.com/redhat-developer/vscode-server-connector/blob/master/LICENSE) -->
+`WTP RSP Server Connector` is the VS Code extension that launches and connects the local WTP-RSP server distribution to the `WTP RSP UI` extension.
 
-A Visual Studio Code extension for interacting with IBM Servers and Runtimes like WebSphere Application Server and Liberty.
+It is the bridge between the VS Code UI and the Eclipse/WTP-based server process shipped by this toolchain.
 
-### Supported Servers
-   * WAS 8.5
-   * Open Liberty 25+
+## What this extension does
 
-## Commands and features
+- Starts and stops the local WTP-RSP server process
+- Connects the UI extension to that server over RSP/WTP-RSP
+- Packages the local product into the extension's `server/` directory for distribution
+- Installs the companion `WTP RSP UI` extension as a dependency
+- Exposes connector-specific utility commands such as opening workspace storage
 
-![ screencast ](https://raw.githubusercontent.com/redhat-developer/vscode-server-connector/master/screencast/vscode-server-connector.gif)
+## Relationship to the other projects
 
-This extension depends on VSCode RSP-WTP UI Extension which is going to be installed automatically along with the RSP-WTP Server Connectors Extension. RSP UI, in conjunction with RSP-WTP Server Connectors Extension supports several commands for interacting with supported server adapters; these are accessible via the command menu (`Cmd+Shift+P` on macOS or `Ctrl+Shift+P` on Windows and Linux) and may be bound to keys in the normal way.
+This repository is only one piece of the full stack:
 
-### Available Commands
-   This extension provides no additional commands other than those available in [rsp-wtp-ui](https://github.com/redhat-developer/rsp-wtp-ui#available-commands)
+- `rsp-wtp-ui`: the VS Code UI layer
+- `rsp-wtp-server`: the Eclipse/WTP-based RSP server implementation
+- `rsp-wtp-client`: the generated protocol client used by the UI
+- `jdtls-jrecontainer-plugin`: the JDT LS companion used for Java runtime and classpath-container synchronization
 
-## Extension Settings
-   This extension provides no additional settings other than those available in [rsp-wtp-ui](https://github.com/redhat-developer/rsp-wtp-ui#extension-settings)
+The connector is responsible for launching the server and making it available to the UI.
 
-<!-- ## Server Parameters
-   This extension provides some ADDITIONAL server parameters in addition to those available in rsp-wtp-ui. To see a list of global server parameters, please go [here](https://github.com/redhat-developer/rsp-wtp-ui#server-parameters). Below are JBoss / WildFly specific parameters.
+## Supported runtimes
 
-   * `"args.vm.override.string"` - allow to override VM arguments. Once you edit this flag, *make sure "args.override.boolean" is set to true before launching your server. Otherwise, the server will attempt to auto-generate the launch arguments as it normally does.*
-   * `"args.program.override.string"` - allow to override program arguments. Once you edit this flag, *make sure "args.override.boolean" is set to true before launching your server. Otherwise, the server will attempt to auto-generate the launch arguments as it normally does.*
+The current bundled server distribution is intended to support these runtime families:
 
-   * `"jboss.server.host"` - allow to set the host you want the current JBoss/Wildfly instance to bind to (default localhost)
-   * `"jboss.server.port"` - allow to set the port you want the current JBoss/Wildfly instance to bind to (default 8080)
-   * `"wildfly.server.config.file"` - the name of the configuration file to be used for the current Jboss/Wildfly instance. The file has to be stored in the same folder as the default standalone.xml file. (e.g "wildfly.server.config.file": "newconfigfile.xml") -->
+- WebSphere Traditional 8.5
+- Open Liberty / Liberty
+- JBoss EAP 7.0
 
------------------------------------------------------------------------------------------------------------
-<!-- ## Install extension locally
-This is an open source project open to anyone. This project welcomes contributions and suggestions!!
+The exact availability of those adapters still depends on the packaged server build and its target platform contents.
 
-Download the most recent `adapters-<version>.vsix` file and install it by following the instructions [here](https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix).
+## Commands
 
-Stable releases are archived under http://download.jboss.org/jbosstools/adapters/snapshots/vscode-middleware-tools -->
+This extension contributes one connector-specific command directly:
 
-## Community, discussion, contribution, and support
+- `WTP: Open Connector Workspace Storage`
 
-**Issues:** If you have an issue/feature-request with the JBoss Toolkit extension, please file it [here](https://github.com/redhat-developer/rsp-wtp-server-connector/issues).
+Most server-management commands shown in VS Code come from `WTP RSP UI`, but they depend on this connector to start and connect the local server.
 
-**Contributing:** Want to become a contributor and submit your code? Have a look at our [development guide](https://github.com/redhat-developer/rsp-wtp-server-connector/blob/master/CONTRIBUTING.md).
+## Settings
 
-**Chat:** Open a [Discussion on GitHub](https://github.com/redhat-developer/rsp-wtp-server-connector/discussions)
+This extension does not currently contribute user-facing settings of its own.
 
-**UI Testing:**
+Runtime behavior is typically controlled through:
 
-You can perform UI testing by running the following commands:
-1. Download the package and its dependencies
-```sh
-npm install
-```
-2. Build the project
-```sh
-npm run build
-```
-3. Run UI tests
-```sh
-npm run public-ui-test
-```
+- `WTP RSP UI` settings such as `wtp-rsp-ui.rsp.java.home`
+- environment variables used during local development and packaging
+- the packaged server distribution copied into `server/`
 
-License
-=======
-EPL 2.0, See [LICENSE](LICENSE) for more information.
+## Fork origin
+
+This project started as a fork of the original Red Hat `vscode-server-connector` project:
+
+- https://github.com/redhat-developer/vscode-server-connector
+
+This fork adapts that foundation for the WTP-RSP toolchain and its current server packaging and launch flow.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) if present in the repository, and the companion project documentation for packaging and server-build details.
+
+## License
+
+EPL 2.0. See [LICENSE](LICENSE).
