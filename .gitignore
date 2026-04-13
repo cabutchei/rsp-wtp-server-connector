@@ -11,3 +11,5 @@ test-resources/
 .nyc_output/
 LATEST
 .DS_Store
+/server
+/dist
