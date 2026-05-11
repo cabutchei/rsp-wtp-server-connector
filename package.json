@@ -72,7 +72,19 @@
           "markdownDescription": "Extra JVM arguments used to launch the bundled WTP-RSP server. For example: `-Xmx2G -Dfoo=bar`. Requires restarting the RSP provider."
         }
       }
+    },
+    "languages": [
+    {
+      "id": "com.ibm.ws.ast.st.v85.server.base"
     }
+  ],
+    "grammars": [
+        {
+          "language": "com.ibm.ws.ast.st.v85.server.base",
+          "scopeName": "source.com.ibm.ws.ast.st.v85.server.base",
+          "path": "./syntaxes/tmLanguage.json"
+        }
+  ]
   },
   "scripts": {
     "package": "node ./build/package.js",

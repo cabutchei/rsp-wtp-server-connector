@@ -3,22 +3,49 @@
   "scopeName": "source.com.ibm.ws.ast.st.v85.server.base",
   "patterns": [
     {
-      "include": "#errorBlockByCode"
+      "include": "#infoBlockByLogLevel"
     },
     {
-      "include": "#warningBlockByCode"
-    },
-    {
-      "include": "#infoBlockByCode"
-    },
-    {
-      "include": "#errorBlockByLogLevel"
+      "include": "#debugBlockByLogLevel"
     },
     {
       "include": "#warningBlockByLogLevel"
     },
     {
-      "include": "#infoBlockByLogLevel"
+      "include": "#errorBlockByLogLevel"
+    },
+    {
+      "include": "#infoBlockByCode"
+    },
+    {
+      "include": "#warningBlockByCode"
+    },
+    {
+      "include": "#errorBlockByCode"
+    },
+    {
+      "include": "#severeBlockByCode"
+    },
+    {
+      "include": "#traceBlockByCode"
+    },
+    {
+      "include": "#debugBlockByCode"
+    },
+    {
+      "include": "#trackingBlockByCode"
+    },
+    {
+      "include": "#fatalBlockBySeverity"
+    },
+    {
+      "include": "#auditBlockBySeverity"
+    },
+    {
+      "include": "#configBlockBySeverity"
+    },
+    {
+      "include": "#detailBlockBySeverity"
     },
     {
       "include": "#errorBlockBySeverity"
@@ -27,43 +54,92 @@
       "include": "#warningBlockBySeverity"
     },
     {
+      "include": "#stderrBlockBySeverity"
+    },
+    {
+      "include": "#unknownBlockBySeverity"
+    },
+    {
       "include": "#infoBlockBySeverity"
     },
     {
-      "match": "#.*$",
+      "match": "^#.*$",
       "name": "comment.line.number-sign.com.ibm.ws.ast.st.v85.server.base"
     },
     {
-      "match": "\\bERROR\\b|\\bERRO\\b|\\bSEVERE\\b",
+      "match": "^\\[[^\\]]+\\].*\\bFATAL\\b",
+      "name": "keyword.control.fatal.com.ibm.ws.ast.st.v85.server.base"
+    },
+    {
+      "match": "^\\[[^\\]]+\\].*\\b(ERROR|ERRO|SEVERE)\\b",
       "name": "keyword.control.error.com.ibm.ws.ast.st.v85.server.base"
     },
     {
-      "match": "\\bWARNING\\b|\\bWARN\\b",
+      "match": "^\\[[^\\]]+\\].*\\b(WARNING|WARN)\\b",
       "name": "keyword.control.warning.com.ibm.ws.ast.st.v85.server.base"
     },
     {
-      "match": "\\bINFO\\b",
+      "match": "^\\[[^\\]]+\\].*\\bAUDIT\\b",
+      "name": "keyword.control.audit.com.ibm.ws.ast.st.v85.server.base"
+    },
+    {
+      "match": "^\\[[^\\]]+\\].*\\bINFO\\b",
       "name": "keyword.control.info.com.ibm.ws.ast.st.v85.server.base"
+    },
+    {
+      "match": "^\\[[^\\]]+\\].*\\bCONFIG\\b",
+      "name": "keyword.control.config.com.ibm.ws.ast.st.v85.server.base"
+    },
+    {
+      "match": "^\\[[^\\]]+\\].*\\bTRACE\\b",
+      "name": "keyword.control.trace.com.ibm.ws.ast.st.v85.server.base"
+    },
+    {
+      "match": "^\\[[^\\]]+\\].*\\bDEBUG\\b",
+      "name": "keyword.control.debug.com.ibm.ws.ast.st.v85.server.base"
     }
   ],
   "repository": {
-    "errorBlockByCode": {
-      "name": "message.error.com.ibm.ws.ast.st.v85.server.base",
-      "begin": "^(\\[[^\\]]+\\])(\\s+)(\\S+)(\\s+)(\\S+)(\\s+)(\\S)(\\s+)(.*?\\b[A-Z]{4}\\d{4}E:.*)$",
+    "severeBlockByCode": {
+      "name": "message.severe.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(\\S)\\s+.*\\b((?:[A-Z]{4}\\d{4}|[A-Z]{3}\\d{5})S:).*$",
       "beginCaptures": {
         "1": {
           "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
         },
-        "3": {
+        "2": {
           "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
         },
-        "5": {
+        "3": {
           "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
         },
-        "7": {
+        "4": {
           "name": "meta.severity.com.ibm.ws.ast.st.v85.server.base"
         },
-        "9": {
+        "5": {
+          "name": "keyword.control.severe.com.ibm.ws.ast.st.v85.server.base"
+        }
+      },
+      "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
+      "contentName": "message.severe.com.ibm.ws.ast.st.v85.server.base"
+    },
+    "errorBlockByCode": {
+      "name": "message.error.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(\\S)\\s+.*\\b((?:[A-Z]{4}\\d{4}|[A-Z]{3}\\d{5})E:).*$",
+      "beginCaptures": {
+        "1": {
+          "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "2": {
+          "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "3": {
+          "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "4": {
+          "name": "meta.severity.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "5": {
           "name": "keyword.control.error.com.ibm.ws.ast.st.v85.server.base"
         }
       },
@@ -72,70 +148,136 @@
     },
     "warningBlockByCode": {
       "name": "message.warning.com.ibm.ws.ast.st.v85.server.base",
-      "begin": "^(\\[[^\\]]+\\])(\\s+)(\\S+)(\\s+)(\\S+)(\\s+)(\\S)(\\s+)(.*?\\b[A-Z]{4}\\d{4}W:.*)$",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(\\S)\\s+.*\\b((?:[A-Z]{4}\\d{4}|[A-Z]{3}\\d{5})W:).*$",
       "beginCaptures": {
         "1": {
           "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
         },
-        "3": {
+        "2": {
           "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
         },
-        "5": {
+        "3": {
           "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
         },
-        "7": {
+        "4": {
           "name": "meta.severity.com.ibm.ws.ast.st.v85.server.base"
         },
-        "9": {
+        "5": {
           "name": "keyword.control.warning.com.ibm.ws.ast.st.v85.server.base"
         }
       },
       "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
       "contentName": "message.warning.com.ibm.ws.ast.st.v85.server.base"
     },
-    "infoBlockByCode": {
-      "name": "message.info.com.ibm.ws.ast.st.v85.server.base",
-      "begin": "^(\\[[^\\]]+\\])(\\s+)(\\S+)(\\s+)(\\S+)(\\s+)(\\S)(\\s+)(.*?\\b[A-Z]{4}\\d{4}I:.*)$",
+    "trackingBlockByCode": {
+      "name": "message.tracking.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(\\S)\\s+.*\\b((?:[A-Z]{4}\\d{4}|[A-Z]{3}\\d{5})K:).*$",
       "beginCaptures": {
         "1": {
           "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
         },
-        "3": {
+        "2": {
           "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
         },
-        "5": {
+        "3": {
           "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
         },
-        "7": {
+        "4": {
           "name": "meta.severity.com.ibm.ws.ast.st.v85.server.base"
         },
-        "9": {
+        "5": {
+          "name": "keyword.control.tracking.com.ibm.ws.ast.st.v85.server.base"
+        }
+      },
+      "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
+      "contentName": "message.tracking.com.ibm.ws.ast.st.v85.server.base"
+    },
+    "infoBlockByCode": {
+      "name": "message.info.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(\\S)\\s+.*\\b((?:[A-Z]{4}\\d{4}|[A-Z]{3}\\d{5})(?:I|L):).*$",
+      "beginCaptures": {
+        "1": {
+          "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "2": {
+          "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "3": {
+          "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "4": {
+          "name": "meta.severity.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "5": {
           "name": "keyword.control.info.com.ibm.ws.ast.st.v85.server.base"
         }
       },
       "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
       "contentName": "message.info.com.ibm.ws.ast.st.v85.server.base"
     },
-    "errorBlockByLogLevel": {
-      "name": "message.error.com.ibm.ws.ast.st.v85.server.base",
-      "begin": "^(\\[[^\\]]+\\])(\\s+)(\\S+)(\\s+)(\\S+)(\\s+)(O)(\\s+)(.*?\\b(ERROR|ERRO|SEVERE)\\b.*)$",
+    "traceBlockByCode": {
+      "name": "message.trace.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(\\S)\\s+.*\\b((?:[A-Z]{4}\\d{4}|[A-Z]{3}\\d{5})T:).*$",
       "beginCaptures": {
         "1": {
           "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
         },
-        "3": {
+        "2": {
           "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
         },
-        "5": {
+        "3": {
           "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
         },
-        "7": {
+        "4": {
           "name": "meta.severity.com.ibm.ws.ast.st.v85.server.base"
         },
-        "9": {
-          "name": "message.error.com.ibm.ws.ast.st.v85.server.base"
+        "5": {
+          "name": "keyword.control.trace.com.ibm.ws.ast.st.v85.server.base"
+        }
+      },
+      "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
+      "contentName": "message.trace.com.ibm.ws.ast.st.v85.server.base"
+    },
+    "debugBlockByCode": {
+      "name": "message.debug.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(\\S)\\s+.*\\b((?:[A-Z]{4}\\d{4}|[A-Z]{3}\\d{5})(?:D|F):).*$",
+      "beginCaptures": {
+        "1": {
+          "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
         },
-        "10": {
+        "2": {
+          "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "3": {
+          "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "4": {
+          "name": "meta.severity.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "5": {
+          "name": "keyword.control.debug.com.ibm.ws.ast.st.v85.server.base"
+        }
+      },
+      "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
+      "contentName": "message.debug.com.ibm.ws.ast.st.v85.server.base"
+    },
+    "errorBlockByLogLevel": {
+      "name": "message.error.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(O)\\s+.*\\b(ERROR|ERRO|SEVERE)\\b.*$",
+      "beginCaptures": {
+        "1": {
+          "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "2": {
+          "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "3": {
+          "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "4": {
+          "name": "meta.severity.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "5": {
           "name": "keyword.control.error.com.ibm.ws.ast.st.v85.server.base"
         }
       },
@@ -144,67 +286,167 @@
     },
     "warningBlockByLogLevel": {
       "name": "message.warning.com.ibm.ws.ast.st.v85.server.base",
-      "begin": "^(\\[[^\\]]+\\])(\\s+)(\\S+)(\\s+)(\\S+)(\\s+)(O)(\\s+)(.*?\\b(WARNING|WARN)\\b.*)$",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(O)\\s+.*\\b(WARNING|WARN)\\b.*$",
       "beginCaptures": {
         "1": {
           "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
         },
-        "3": {
+        "2": {
           "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
         },
-        "5": {
+        "3": {
           "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
         },
-        "7": {
+        "4": {
           "name": "meta.severity.com.ibm.ws.ast.st.v85.server.base"
         },
-        "9": {
-          "name": "message.warning.com.ibm.ws.ast.st.v85.server.base"
-        },
-        "10": {
+        "5": {
           "name": "keyword.control.warning.com.ibm.ws.ast.st.v85.server.base"
         }
       },
       "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
       "contentName": "message.warning.com.ibm.ws.ast.st.v85.server.base"
     },
-    "infoBlockByLogLevel": {
-      "name": "message.info.com.ibm.ws.ast.st.v85.server.base",
-      "begin": "^(\\[[^\\]]+\\])(\\s+)(\\S+)(\\s+)(\\S+)(\\s+)(O)(\\s+)(.*?\\bINFO\\b.*)$",
+    "debugBlockByLogLevel": {
+      "name": "message.debug.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(O)\\s+.*\\b(DEBUG)\\b.*$",
       "beginCaptures": {
         "1": {
           "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
         },
-        "3": {
+        "2": {
           "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
         },
-        "5": {
+        "3": {
           "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
         },
-        "7": {
+        "4": {
           "name": "meta.severity.com.ibm.ws.ast.st.v85.server.base"
         },
-        "9": {
-          "name": "message.info.com.ibm.ws.ast.st.v85.server.base"
+        "5": {
+          "name": "keyword.control.debug.com.ibm.ws.ast.st.v85.server.base"
+        }
+      },
+      "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
+      "contentName": "message.debug.com.ibm.ws.ast.st.v85.server.base"
+    },
+    "infoBlockByLogLevel": {
+      "name": "message.info.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(O)\\s+.*\\b(INFO)\\b.*$",
+      "beginCaptures": {
+        "1": {
+          "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "2": {
+          "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "3": {
+          "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "4": {
+          "name": "meta.severity.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "5": {
+          "name": "keyword.control.info.com.ibm.ws.ast.st.v85.server.base"
         }
       },
       "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
       "contentName": "message.info.com.ibm.ws.ast.st.v85.server.base"
     },
-    "errorBlockBySeverity": {
-      "name": "message.error.com.ibm.ws.ast.st.v85.server.base",
-      "begin": "^(\\[[^\\]]+\\])(\\s+)(\\S+)(\\s+)(\\S+)(\\s+)(E)(\\s+)(.*)$",
+    "fatalBlockBySeverity": {
+      "name": "message.fatal.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(F)\\s+.*$",
       "beginCaptures": {
         "1": {
           "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
         },
-        "3": {
+        "2": {
           "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
         },
-        "5": {
+        "3": {
           "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
         },
-        "7": {
+        "4": {
+          "name": "keyword.control.fatal.com.ibm.ws.ast.st.v85.server.base"
+        }
+      },
+      "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
+      "contentName": "message.fatal.com.ibm.ws.ast.st.v85.server.base"
+    },
+    "auditBlockBySeverity": {
+      "name": "message.audit.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(A)\\s+.*$",
+      "beginCaptures": {
+        "1": {
+          "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "2": {
+          "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "3": {
+          "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "4": {
+          "name": "keyword.control.audit.com.ibm.ws.ast.st.v85.server.base"
+        }
+      },
+      "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
+      "contentName": "message.audit.com.ibm.ws.ast.st.v85.server.base"
+    },
+    "configBlockBySeverity": {
+      "name": "message.config.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(C)\\s+.*$",
+      "beginCaptures": {
+        "1": {
+          "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "2": {
+          "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "3": {
+          "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "4": {
+          "name": "keyword.control.config.com.ibm.ws.ast.st.v85.server.base"
+        }
+      },
+      "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
+      "contentName": "message.config.com.ibm.ws.ast.st.v85.server.base"
+    },
+    "detailBlockBySeverity": {
+      "name": "message.detail.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(D)\\s+.*$",
+      "beginCaptures": {
+        "1": {
+          "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "2": {
+          "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "3": {
+          "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "4": {
+          "name": "keyword.control.detail.com.ibm.ws.ast.st.v85.server.base"
+        }
+      },
+      "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
+      "contentName": "message.detail.com.ibm.ws.ast.st.v85.server.base"
+    },
+    "errorBlockBySeverity": {
+      "name": "message.error.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(E)\\s+.*$",
+      "beginCaptures": {
+        "1": {
+          "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "2": {
+          "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "3": {
+          "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "4": {
           "name": "keyword.control.error.com.ibm.ws.ast.st.v85.server.base"
         }
       },
@@ -213,38 +455,78 @@
     },
     "warningBlockBySeverity": {
       "name": "message.warning.com.ibm.ws.ast.st.v85.server.base",
-      "begin": "^(\\[[^\\]]+\\])(\\s+)(\\S+)(\\s+)(\\S+)(\\s+)(W)(\\s+)(.*)$",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(W)\\s+.*$",
       "beginCaptures": {
         "1": {
           "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
         },
-        "3": {
+        "2": {
           "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
         },
-        "5": {
+        "3": {
           "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
         },
-        "7": {
+        "4": {
           "name": "keyword.control.warning.com.ibm.ws.ast.st.v85.server.base"
         }
       },
       "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
       "contentName": "message.warning.com.ibm.ws.ast.st.v85.server.base"
     },
-    "infoBlockBySeverity": {
-      "name": "message.info.com.ibm.ws.ast.st.v85.server.base",
-      "begin": "^(\\[[^\\]]+\\])(\\s+)(\\S+)(\\s+)(\\S+)(\\s+)(I)(\\s+)(.*)$",
+    "stderrBlockBySeverity": {
+      "name": "message.stderr.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(R)\\s+.*$",
       "beginCaptures": {
         "1": {
           "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
         },
-        "3": {
+        "2": {
           "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
         },
-        "5": {
+        "3": {
           "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
         },
-        "7": {
+        "4": {
+          "name": "keyword.control.stderr.com.ibm.ws.ast.st.v85.server.base"
+        }
+      },
+      "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
+      "contentName": "message.stderr.com.ibm.ws.ast.st.v85.server.base"
+    },
+    "unknownBlockBySeverity": {
+      "name": "message.unknown.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(Z)\\s+.*$",
+      "beginCaptures": {
+        "1": {
+          "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "2": {
+          "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "3": {
+          "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "4": {
+          "name": "keyword.control.unknown.com.ibm.ws.ast.st.v85.server.base"
+        }
+      },
+      "end": "(?=^\\[[^\\]]+\\]\\s+\\S+\\s+\\S+\\s+\\S)|\\z",
+      "contentName": "message.unknown.com.ibm.ws.ast.st.v85.server.base"
+    },
+    "infoBlockBySeverity": {
+      "name": "message.info.com.ibm.ws.ast.st.v85.server.base",
+      "begin": "^(\\[[^\\]]+\\])\\s+(\\S+)\\s+(\\S+)\\s+(I)\\s+.*$",
+      "beginCaptures": {
+        "1": {
+          "name": "meta.timestamp.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "2": {
+          "name": "meta.thread-id.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "3": {
+          "name": "meta.source.com.ibm.ws.ast.st.v85.server.base"
+        },
+        "4": {
           "name": "keyword.control.info.com.ibm.ws.ast.st.v85.server.base"
         }
       },
