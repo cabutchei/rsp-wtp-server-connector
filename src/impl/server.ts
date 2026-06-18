@@ -147,9 +147,42 @@ export class EquinoxRspLauncher {
         return false;
     }
 
-    private getServerLocation(process: NodeJS.Process): string {
-        return process.env.RSP_SERVER_LOCATION ?
-            process.env.RSP_SERVER_LOCATION : path.resolve(__dirname, '..', '..', '..', 'server', 'plugins');
+    private getServerHome(currentProcess: NodeJS.Process): string {
+        const configuredLocation = currentProcess.env.RSP_SERVER_LOCATION ?
+            currentProcess.env.RSP_SERVER_LOCATION : path.resolve(__dirname, '..', '..', '..', 'server');
+        return path.basename(configuredLocation) === 'plugins' ? path.dirname(configuredLocation) : configuredLocation;
+    }
+
+    private getEquinoxLauncher(serverHome: string): string {
+        const pluginsDir = path.join(serverHome, 'plugins');
+        const launcher = fs.readdirSync(pluginsDir)
+            .find(candidate => candidate.startsWith('org.eclipse.equinox.launcher_') && candidate.endsWith('.jar'));
+        if (!launcher) {
+            throw new Error(`Unable to locate org.eclipse.equinox.launcher jar in ${pluginsDir}`);
+        }
+        return path.join(pluginsDir, launcher);
+    }
+
+    private getConfigurationPath(serverHome: string): string {
+        const configurationCandidates: string[] = [];
+        if (process.platform === 'win32') {
+            configurationCandidates.push('config_win');
+        } else if (process.platform === 'darwin') {
+            if (process.arch === 'arm64') {
+                configurationCandidates.push('config_mac_arm');
+            }
+            configurationCandidates.push('config_mac');
+        }
+        configurationCandidates.push('configuration');
+
+        for (const candidate of configurationCandidates) {
+            const candidatePath = path.join(serverHome, candidate);
+            if (fs.existsSync(candidatePath)) {
+                return candidatePath;
+            }
+        }
+
+        throw new Error(`Unable to locate a compatible server configuration in ${serverHome} for ${process.platform}/${process.arch}`);
     }
 
     private getServerVmArgs(): string[] {
@@ -165,13 +198,14 @@ export class EquinoxRspLauncher {
     }
 
     private async startServer(
-        location: string, 
+        serverHome: string, 
         port: number, 
         javaHome: string,
         stdoutCallback: (data: string) => void, 
         stderrCallback: (data: string) => void, api: EquinoxRspController): Promise<void> {
 
-        const equinox = path.join(location, 'org.eclipse.equinox.launcher_1.5.300.v20190213-1655.jar');
+        const equinox = this.getEquinoxLauncher(serverHome);
+        const configurationPath = this.getConfigurationPath(serverHome);
         const java = path.join(javaHome, 'bin', 'java');
         const storagePath = process.env['VSCODE_STORAGE_PATH'];
         // Debuggable version
@@ -182,12 +216,14 @@ export class EquinoxRspLauncher {
             `-Drsp.server.port=${port}`,
             '-jar',
             equinox,
+            '-configuration',
+            configurationPath,
             '-data',
             storagePath,
             ...this.getEquinoxDebugArgs(),
             consoleLog
         ];
-        this.cpProcess = cp.spawn(java, args, { cwd: location });
+        this.cpProcess = cp.spawn(java, args, { cwd: serverHome });
         if(this.cpProcess) {
             if (this.cpProcess.stdout)
                 this.cpProcess.stdout.on('data', stdoutCallback);
@@ -239,8 +275,8 @@ export class EquinoxRspLauncher {
                 fs.unlinkSync(lockFile);
             }
             localPort = serverPort;
-            const serverLocation = this.getServerLocation(process);
-            this.startServer(serverLocation, localPort, this.javaHome, stdoutCallback, stderrCallback, api);
+            const serverHome = this.getServerHome(process);
+            this.startServer(serverHome, localPort, this.javaHome, stdoutCallback, stderrCallback, api);
             localSpawned = true;
         }
 
