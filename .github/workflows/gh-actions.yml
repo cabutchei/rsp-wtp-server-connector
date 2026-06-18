@@ -5,6 +5,7 @@ on:
     branches: [master]
   push:
     branches: [master]
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       publish_to_marketplace:
@@ -19,7 +20,7 @@ on:
         default: false
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   package:
@@ -55,7 +56,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    if: inputs.publish_to_marketplace == true || inputs.publish_to_ovsx == true
+    if: github.ref_type == 'tag' || inputs.publish_to_marketplace == true || inputs.publish_to_ovsx == true
     needs: package
     runs-on: ubuntu-latest
     steps:
@@ -71,14 +72,31 @@ jobs:
           name: rsp-wtp-server-connector
           path: dist
       - name: Publish to VS Code Marketplace
-        if: inputs.publish_to_marketplace == true
+        if: github.ref_type == 'tag' || inputs.publish_to_marketplace == true
         run: |
           for vsix in dist/*.vsix; do
             vsce publish --skip-duplicate -p "${{ secrets.VSCODE_MARKETPLACE_TOKEN }}" --packagePath "${vsix}"
           done
       - name: Publish to Open VSX
-        if: inputs.publish_to_ovsx == true
+        if: github.ref_type == 'tag' || inputs.publish_to_ovsx == true
         run: |
           for vsix in dist/*.vsix; do
             ovsx publish --skip-duplicate -p "${{ secrets.OVSX_MARKETPLACE_TOKEN }}" --packagePath "${vsix}"
           done
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download VSIX artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rsp-wtp-server-connector
+          path: dist
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: RSP-WTP Server Connector ${{ github.ref_name }}
+          files: dist/*.vsix
