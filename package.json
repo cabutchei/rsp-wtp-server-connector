@@ -36,6 +36,7 @@
     "onCommand:wtp.server.publishIncremental",
     "onCommand:wtp.server.actions",
     "onCommand:wtp.serverConnector.openWorkspaceStorage",
+    "onCommand:wtp.serverConnector.cleanWorkspaceStorage",
     "onView:com.github.cabutchei.rsp.serversView"
   ],
   "categories": [
@@ -57,6 +58,10 @@
       {
         "command": "wtp.serverConnector.openWorkspaceStorage",
         "title": "WTP: Open Connector Workspace Storage"
+      },
+      {
+        "command": "wtp.serverConnector.cleanWorkspaceStorage",
+        "title": "WTP: Clean Connector Workspace Storage"
       }
     ],
     "configuration": {
