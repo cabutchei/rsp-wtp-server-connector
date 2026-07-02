@@ -78,6 +78,17 @@ suite('Extension API', () => {
             await extensionApi.stopRSP();
             expect(stopStub).calledOnce;
         });
+
+        test('clears host and port after stop', async () => {
+            sandbox.stub(extensionApi.getLauncher(), 'start').resolves(serverInfo);
+            sandbox.stub(extensionApi.getLauncher(), 'terminate').resolves();
+
+            await extensionApi.startRSP(stdCallback, stdCallback);
+            await extensionApi.stopRSP();
+
+            expect(extensionApi.getHost()).equals('');
+            expect(extensionApi.getPort()).equals(0);
+        });
     });
 
     suite('getHost', () => {

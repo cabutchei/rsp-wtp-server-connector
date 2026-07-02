@@ -14,11 +14,6 @@ export interface EquinoxRspLauncherOptions {
     providerId: string;
     providerName: string;
     rspId: string;
-    minPort: number;
-    maxPort: number;
-    connectionDelay: number;
-    connectionPollFrequency: number;
-    minimumSupportedJava: number;
     getImagePathForServerType: (serverType: string) => Uri;
 }
 

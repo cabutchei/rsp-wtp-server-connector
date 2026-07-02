@@ -64,20 +64,6 @@
         "title": "WTP: Clean Connector Workspace Storage"
       }
     ],
-    "configuration": {
-      "type": "object",
-      "title": "WTP RSP Server Connector",
-      "properties": {
-        "wtp-rsp-server-connector.rsp.server.vmargs": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "default": null,
-          "markdownDescription": "Extra JVM arguments used to launch the bundled WTP-RSP server. For example: `-Xmx2G -Dfoo=bar`. Requires restarting the RSP provider."
-        }
-      }
-    },
     "languages": [
     {
       "id": "com.ibm.ws.ast.st.v85.server.base"
