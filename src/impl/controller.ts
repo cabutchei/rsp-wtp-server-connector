@@ -51,10 +51,15 @@ export class EquinoxRspController implements RSPController {
     }
 
     public async stopRSP(): Promise<void> {
-        this.launcher.terminate().catch(error => {
+        try {
+            await this.launcher.terminate();
+            this.host = '';
+            this.port = 0;
+            this.updateRSPStateChanged(ServerState.STOPPED);
+        } catch (error) {
             const innerMsg: string = error ? (error.message ? error.message : JSON.stringify(error)) : '';
             return Promise.reject(`RSP Error - ${this.opts.providerName} failed to stop - ${innerMsg}`);
-        });
+        }
     }
 
     public getImage(serverType: string): Uri {
