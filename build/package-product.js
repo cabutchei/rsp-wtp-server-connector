@@ -37,6 +37,11 @@ const productEclipseDirs = {
     mac: path.resolve(process.env.RSP_PRODUCT_ECLIPSE_DIR_MAC || process.env.RSP_PRODUCT_ECLIPSE_DIR || defaultMacProductEclipseDir),
     win: path.resolve(process.env.RSP_PRODUCT_ECLIPSE_DIR_WIN || defaultWinProductEclipseDir)
 };
+const defaultBridgeJar = path.resolve(
+    connectorRoot,
+    'bundles',
+    'com.github.cabutchei.jdtls.serverbridge-0.2.0.alpha.jar'
+);
 
 const targetServerDir = path.join(connectorRoot, 'server');
 const targetPluginsDir = path.join(targetServerDir, 'plugins');
@@ -45,6 +50,72 @@ const distDir = path.join(connectorRoot, 'dist');
 function ensureSourceExists(dir, label) {
     if (!fs.existsSync(dir)) {
         throw new Error(`${label} not found: ${dir}`);
+    }
+}
+
+function readJavaExtensions() {
+    const pkg = fs.readJsonSync(path.join(connectorRoot, 'package.json'));
+    const contributes = pkg && pkg.contributes ? pkg.contributes : {};
+    return Array.isArray(contributes.javaExtensions) ? contributes.javaExtensions : [];
+}
+
+function toServerRelativePath(extensionPath) {
+    const prefix = './server/';
+    if (!extensionPath.startsWith(prefix)) {
+        throw new Error(`Unsupported javaExtensions path: ${extensionPath}`);
+    }
+    return extensionPath.slice(prefix.length);
+}
+
+function resolveJavaExtensionSource(serverRelativePath, sourcePluginsDirs, bridgeJar) {
+    const baseName = path.basename(serverRelativePath);
+    if (baseName === path.basename(bridgeJar)) {
+        return { path: bridgeJar, kind: 'file' };
+    }
+    for (const entry of sourcePluginsDirs) {
+        const candidate = path.join(entry.source, baseName);
+        if (fs.existsSync(candidate)) {
+            return { path: candidate, kind: 'file' };
+        }
+        if (baseName.endsWith('.jar')) {
+            const directoryCandidate = path.join(entry.source, baseName.slice(0, -4));
+            if (fs.existsSync(directoryCandidate) && fs.statSync(directoryCandidate).isDirectory()) {
+                return { path: directoryCandidate, kind: 'directory' };
+            }
+        }
+    }
+    throw new Error(`Could not locate contributed Java extension '${baseName}' in the packaged product plugins.`);
+}
+
+function createBundleJarFromDirectory(sourceDir, targetFile) {
+    const result = spawnSync('jar', ['--create', '--file', targetFile, '--no-manifest', '-C', sourceDir, '.'], {
+        stdio: 'inherit',
+        shell: false
+    });
+    if (result.error) {
+        if (result.error.code === 'ENOENT') {
+            throw new Error("Could not find 'jar' in PATH.");
+        }
+        throw result.error;
+    }
+    if (typeof result.status === 'number' && result.status !== 0) {
+        throw new Error(`jar packaging failed with exit code ${result.status} for ${sourceDir}`);
+    }
+}
+
+async function copyJavaExtensions(javaExtensions, sourcePluginsDirs, bridgeJar) {
+    ensureSourceExists(bridgeJar, 'JDT LS bridge jar');
+    for (const extensionPath of javaExtensions) {
+        const serverRelativePath = toServerRelativePath(extensionPath);
+        const source = resolveJavaExtensionSource(serverRelativePath, sourcePluginsDirs, bridgeJar);
+        const target = path.join(targetServerDir, serverRelativePath);
+        console.log(`Copying contributed Java extension ${source.path} -> ${target}`);
+        await fs.ensureDir(path.dirname(target));
+        if (source.kind === 'directory') {
+            createBundleJarFromDirectory(source.path, target);
+        } else {
+            await fs.copy(source.path, target);
+        }
     }
 }
 
@@ -73,6 +144,8 @@ function runVscePackage() {
 }
 
 async function main() {
+    const javaExtensions = readJavaExtensions();
+    const bridgeJar = path.resolve(process.env.RSP_JDTLS_BRIDGE_JAR || defaultBridgeJar);
     const sourceConfigurations = [
         {
             label: 'macOS product configuration directory',
@@ -98,6 +171,7 @@ async function main() {
 
     console.log(`Using macOS product Eclipse directory: ${productEclipseDirs.mac}`);
     console.log(`Using Windows product Eclipse directory: ${productEclipseDirs.win}`);
+    console.log(`Using JDT LS bridge jar: ${bridgeJar}`);
     sourceConfigurations.forEach(entry => ensureSourceExists(entry.source, entry.label));
     sourcePluginsDirs.forEach(entry => ensureSourceExists(entry.source, entry.label));
 
@@ -113,10 +187,7 @@ async function main() {
         console.log(`Copying ${entry.label} -> ${entry.target}`);
         await fs.copy(entry.source, entry.target);
     }
-    for (const entry of sourcePluginsDirs) {
-        console.log(`Merging ${entry.label} -> ${targetPluginsDir}`);
-        await fs.copy(entry.source, targetPluginsDir);
-    }
+    await copyJavaExtensions(javaExtensions, sourcePluginsDirs, bridgeJar);
 
     console.log('Running vsce package...');
     runVscePackage();
