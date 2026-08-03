@@ -5,317 +5,257 @@
 
 'use strict';
 
-import * as cp from 'child_process';
-import * as path from 'path';
-import * as portfinder from 'portfinder';
-import * as requirements from './requirements';
 import * as vscode from 'vscode';
-import { ServerInfo, ServerState } from 'rsp-wtp-server-connector-api';
-import * as waitOn from 'wait-on';
-import * as tcpPort from 'tcp-port-used';
-import * as fs from 'fs-extra';
-import { homedir } from 'os';
-import { ErrorMsgBtn, RequirementsResult, RspRequirementsRejection } from './requirements';
+import * as fs from 'fs';
+import * as path from 'path';
+import { ServerInfo } from 'rsp-wtp-server-connector-api';
 import { Uri } from 'vscode';
 import { EquinoxRspController } from './controller';
-
-export interface HostPortSpawned {
-    host: string;
-    port: number;
-    spawned: boolean;
-}
 
 export interface EquinoxRspLauncherOptions {
     providerId: string;
     providerName: string;
     rspId: string;
-    minPort: number;
-    maxPort: number;
-    connectionDelay: number;
-    connectionPollFrequency: number;
-    minimumSupportedJava: number;
     getImagePathForServerType: (serverType: string) => Uri;
 }
 
+interface EmbeddedRspBootstrapPayload {
+    host: string;
+    port: number;
+    logPath?: string;
+    started?: boolean;
+    running?: boolean;
+}
+
+interface JdtlsCommandResult<T> {
+    success: boolean;
+    message?: string;
+    payload?: T;
+}
+
+interface JavaExtensionApi {
+    serverReady?: () => Promise<unknown>;
+}
+
+class EmbeddedLogTailer {
+    private static readonly POLL_INTERVAL_MS = 500;
+
+    private timer: NodeJS.Timeout | undefined;
+    private filePath: string | undefined;
+    private offset = 0;
+    private reading = false;
+
+    constructor(private readonly onData: (data: string) => void) {
+    }
+
+    public start(filePath: string | undefined): void {
+        this.stop();
+        if (!filePath) {
+            return;
+        }
+        this.filePath = filePath;
+        this.offset = 0;
+        this.timer = setInterval(() => {
+            void this.poll();
+        }, EmbeddedLogTailer.POLL_INTERVAL_MS);
+        void this.poll();
+    }
+
+    public stop(): void {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = undefined;
+        }
+        this.filePath = undefined;
+        this.offset = 0;
+        this.reading = false;
+    }
+
+    private async poll(): Promise<void> {
+        if (this.reading || !this.filePath) {
+            return;
+        }
+        this.reading = true;
+        try {
+            const stat = await this.stat(this.filePath);
+            if (!stat) {
+                return;
+            }
+            if (stat.size < this.offset) {
+                this.offset = 0;
+            }
+            if (stat.size === this.offset) {
+                return;
+            }
+            const length = stat.size - this.offset;
+            const handle = await fs.promises.open(this.filePath, 'r');
+            try {
+                const buffer = Buffer.alloc(length);
+                const result = await handle.read(buffer, 0, length, this.offset);
+                if (result.bytesRead > 0) {
+                    this.offset += result.bytesRead;
+                    this.onData(buffer.slice(0, result.bytesRead).toString('utf8'));
+                }
+            } finally {
+                await handle.close();
+            }
+        } finally {
+            this.reading = false;
+        }
+    }
+
+    private async stat(target: string): Promise<fs.Stats | undefined> {
+        try {
+            return await fs.promises.stat(target);
+        } catch (error) {
+            const code = (error as NodeJS.ErrnoException).code;
+            if (code === 'ENOENT') {
+                return undefined;
+            }
+            throw error;
+        }
+    }
+}
+
 export class EquinoxRspLauncher {
-    private static readonly MAX_HEAP_ARG = '-Xmx1G';
-    private static readonly SERVER_VMARGS_SETTING = 'wtp-rsp-server-connector.rsp.server.vmargs';
+    private static readonly JAVA_EXTENSION_ID = 'redhat.java';
+    private static readonly JAVA_WORKSPACE_COMMAND = 'java.execute.workspaceCommand';
+    private static readonly COMMAND_REGISTRATION_TIMEOUT_MS = 15000;
+    private static readonly COMMAND_REGISTRATION_POLL_MS = 250;
+    private static readonly SERVER_READY_TIMEOUT_MS = 30000;
+    private static readonly BOOTSTRAP_COMMAND = 'com.github.cabutchei.rsp.jdtls.bootstrap';
+    private static readonly STATUS_COMMAND = 'com.github.cabutchei.rsp.jdtls.status';
+    private static readonly STOP_COMMAND = 'com.github.cabutchei.rsp.jdtls.stop';
+
     private options: EquinoxRspLauncherOptions;
-    private cpProcess: cp.ChildProcess;
-    private javaHome: string;
-    private port: number;
-    private spawned: boolean;
+    private logTailer: EmbeddedLogTailer | undefined;
+
     constructor(options: EquinoxRspLauncherOptions) {
         this.options = options;
     }
 
     public async start(stdoutCallback: (data: string) => void,
-        stderrCallback: (data: string) => void,
-        api: EquinoxRspController): Promise<ServerInfo> {
+        _stderrCallback: (data: string) => void,
+        _api: EquinoxRspController): Promise<ServerInfo> {
+        this.stopLogTail();
+        const requestedLogPath = this.getEmbeddedLogPath();
 
-        let requirementResult: RequirementsResult = undefined;
-        try {
-            requirementResult = await requirements.resolveRequirements(this.options.minimumSupportedJava);
-        } catch(err) {
-            return Promise.reject(err);
+        const result = await this.executeBridgeCommand<EmbeddedRspBootstrapPayload>(
+            EquinoxRspLauncher.BOOTSTRAP_COMMAND,
+            { instanceId: this.options.rspId, logPath: requestedLogPath }
+        );
+        if (result.message && result.message.trim().length > 0) {
+            stdoutCallback(`[bridge] ${result.message}`);
         }
-        if(!requirementResult) {
-            return Promise.reject('Unable to find java_home and java version, reason unknown');
+        const payload = result.payload;
+        if (!payload || !payload.port) {
+            return Promise.reject('Bootstrap command did not return a socket port.');
         }
-        if(requirementResult.unexpectedError) {
-            return Promise.reject(requirementResult.unexpectedError);
-        }
-
-        if(requirementResult.rejection) {
-            const rejection: RspRequirementsRejection = requirementResult.rejection;
-            this.displayRequirementRejection(rejection);
-            return;
-        }
-
-        this.javaHome = requirementResult.data.java_home;
-        const options: portfinder.PortFinderOptions = {
-            port: this.options.minPort,
-            stopPort: this.options.maxPort
+        this.startLogTail(payload.logPath || requestedLogPath, stdoutCallback);
+        return {
+            host: payload.host || 'localhost',
+            port: payload.port,
+            spawned: payload.started === true
         };
-        const serverPort: number = await portfinder.getPortPromise(options);
-        const hps: HostPortSpawned = await this.startServerAndWaitOnPort(serverPort, stdoutCallback, stderrCallback, api);
-        this.port = hps.port;
-        this.spawned = hps.spawned;
-        
-        if (!this.port) {
-            return Promise.reject('Could not allocate a port for the rsp server to listen on.');
-        } else {
-            return Promise.resolve({
-                port: this.port,
-                host: 'localhost',
-                spawned: this.spawned
-            });
-        }
-    }
-
-    private getLockFile(): string {
-        const lockFile = path.resolve(homedir(), '.rsp', this.options.rspId, '.lock');
-        return lockFile;
-    }
-
-    private getConfiguredDebugOptionsFile(): string | undefined {
-        const envVars = [
-            'RSP_DEBUG_OPTIONS_FILE',
-            'RSP_DEBUG_OPTIONS',
-            'EQUINOX_DEBUG_OPTIONS_FILE',
-            'EQUINOX_DEBUG_OPTIONS'
-        ];
-        for (const envVar of envVars) {
-            const configuredPath = process.env[envVar];
-            if (configuredPath && configuredPath.trim()) {
-                return configuredPath.trim();
-            }
-        }
-        return undefined;
-    }
-
-    private getEquinoxDebugArgs(): string[] {
-        const debugOptionsFile = this.getConfiguredDebugOptionsFile();
-        if (!debugOptionsFile) {
-            return [];
-        }
-        return ['-debug', debugOptionsFile];
-    }
-
-    private lockFileExists(lockFile: string): boolean {
-        if (fs.existsSync(lockFile)) {
-            return true;
-        }
-        return false;
-    }
-
-    private getLockFilePort(lockFile: string): string | null {
-        if (fs.existsSync(lockFile)) {
-            const port = fs.readFileSync(lockFile, 'utf8');
-            return port;
-        }
-        return null;
-    }
-
-
-    private async lockFilePortInUse(lockFile: string): Promise<boolean> {
-        if (fs.existsSync(lockFile)) {
-            const port = fs.readFileSync(lockFile, 'utf8');
-            const isBusy = await tcpPort.check(+port);
-            return isBusy;
-        }
-        return false;
-    }
-
-    private getServerHome(currentProcess: NodeJS.Process): string {
-        const configuredLocation = currentProcess.env.RSP_SERVER_LOCATION ?
-            currentProcess.env.RSP_SERVER_LOCATION : path.resolve(__dirname, '..', '..', '..', 'server');
-        return path.basename(configuredLocation) === 'plugins' ? path.dirname(configuredLocation) : configuredLocation;
-    }
-
-    private getEquinoxLauncher(serverHome: string): string {
-        const pluginsDir = path.join(serverHome, 'plugins');
-        const launcher = fs.readdirSync(pluginsDir)
-            .find(candidate => candidate.startsWith('org.eclipse.equinox.launcher_') && candidate.endsWith('.jar'));
-        if (!launcher) {
-            throw new Error(`Unable to locate org.eclipse.equinox.launcher jar in ${pluginsDir}`);
-        }
-        return path.join(pluginsDir, launcher);
-    }
-
-    private getConfigurationPath(serverHome: string): string {
-        const configurationCandidates: string[] = [];
-        if (process.platform === 'win32') {
-            configurationCandidates.push('config_win');
-        } else if (process.platform === 'darwin') {
-            if (process.arch === 'arm64') {
-                configurationCandidates.push('config_mac_arm');
-            }
-            configurationCandidates.push('config_mac');
-        }
-        configurationCandidates.push('configuration');
-
-        for (const candidate of configurationCandidates) {
-            const candidatePath = path.join(serverHome, candidate);
-            if (fs.existsSync(candidatePath)) {
-                return candidatePath;
-            }
-        }
-
-        throw new Error(`Unable to locate a compatible server configuration in ${serverHome} for ${process.platform}/${process.arch}`);
-    }
-
-    private getServerVmArgs(): string[] {
-        const configuredVmArgs = vscode.workspace.getConfiguration().get<string | null>(EquinoxRspLauncher.SERVER_VMARGS_SETTING, null);
-        if (!configuredVmArgs || !configuredVmArgs.trim()) {
-            return [];
-        }
-        const parsedVmArgs = configuredVmArgs.match(/(?:[^\s"]+|"[^"]*")+/g);
-        if (!parsedVmArgs) {
-            return [];
-        }
-        return parsedVmArgs.map(arg => arg.replace(/^"|"$/g, ''));
-    }
-
-    private async startServer(
-        serverHome: string, 
-        port: number, 
-        javaHome: string,
-        stdoutCallback: (data: string) => void, 
-        stderrCallback: (data: string) => void, api: EquinoxRspController): Promise<void> {
-
-        const equinox = this.getEquinoxLauncher(serverHome);
-        const configurationPath = this.getConfigurationPath(serverHome);
-        const java = path.join(javaHome, 'bin', 'java');
-        const storagePath = process.env['VSCODE_STORAGE_PATH'];
-        // Debuggable version
-        const consoleLog = '-consoleLog';
-        const args: string[] = [
-            EquinoxRspLauncher.MAX_HEAP_ARG,
-            ...this.getServerVmArgs(),
-            `-Drsp.server.port=${port}`,
-            '-jar',
-            equinox,
-            '-configuration',
-            configurationPath,
-            '-data',
-            storagePath,
-            ...this.getEquinoxDebugArgs(),
-            consoleLog
-        ];
-        this.cpProcess = cp.spawn(java, args, { cwd: serverHome });
-        if(this.cpProcess) {
-            if (this.cpProcess.stdout)
-                this.cpProcess.stdout.on('data', stdoutCallback);
-            if (this.cpProcess.stderr)
-                this.cpProcess.stderr.on('data', stderrCallback);
-            this.cpProcess.on('close', () => {
-                if (api != null) {
-                    api.updateRSPStateChanged(ServerState.STOPPED);
-                }
-            });
-            this.cpProcess.on('exit', () => {
-                if (api != null) {
-                    api.updateRSPStateChanged(ServerState.STOPPED);
-                }
-            });
-        }
     }
 
     public async terminate(): Promise<void> {
         try {
-            if (this.cpProcess) {
-                this.cpProcess.removeAllListeners();
-                this.cpProcess.kill();
-            }
+            await this.executeBridgeCommand<unknown>(EquinoxRspLauncher.STOP_COMMAND, {});
+        } finally {
+            this.stopLogTail();
+        }
+    }
+
+    public async getStatus(): Promise<EmbeddedRspBootstrapPayload | undefined> {
+        const result = await this.executeBridgeCommand<EmbeddedRspBootstrapPayload>(
+            EquinoxRspLauncher.STATUS_COMMAND,
+            {}
+        );
+        return result.payload;
+    }
+
+    private async executeBridgeCommand<T>(command: string, args: Record<string, unknown>): Promise<JdtlsCommandResult<T>> {
+        await this.ensureJavaWorkspaceCommandAvailable();
+        let result: JdtlsCommandResult<T> | undefined;
+        try {
+            result = await vscode.commands.executeCommand<JdtlsCommandResult<T>>(
+                EquinoxRspLauncher.JAVA_WORKSPACE_COMMAND,
+                command,
+                args
+            );
         } catch (err) {
-            return Promise.reject(err);
+            const reason = err instanceof Error ? err.message : String(err);
+            return Promise.reject(new Error(`Failed to execute JDT LS bridge command '${command}': ${reason}`));
         }
+        if (!result) {
+            return Promise.reject(new Error(`No result returned for JDT LS bridge command '${command}'.`));
+        }
+        if (!result.success) {
+            return Promise.reject(new Error(result.message || `JDT LS bridge command '${command}' failed.`));
+        }
+        return result;
     }
-    private async startServerAndWaitOnPort(
-        serverPort: number, 
-        stdoutCallback: (data: string) => void,
-        stderrCallback: (data: string) => void, 
-        api: EquinoxRspController): Promise<HostPortSpawned> {
 
-        let localPort = serverPort;
-        let localSpawned = false;
-        const lockFile: string = this.getLockFile();
-        const lockFileExist: boolean = this.lockFileExists(lockFile);
-        const portInUse: boolean = await this.lockFilePortInUse(lockFile);
-
-        if(lockFileExist && portInUse) {
-            const p = this.getLockFilePort(lockFile);
-            if (p) {
-                localPort = +p;
-            }
-            localSpawned = false;
+    private async ensureJavaWorkspaceCommandAvailable(): Promise<void> {
+        const javaExtension = vscode.extensions.getExtension(EquinoxRspLauncher.JAVA_EXTENSION_ID);
+        if (!javaExtension) {
+            return Promise.reject(new Error(`Required extension '${EquinoxRspLauncher.JAVA_EXTENSION_ID}' is not installed.`));
+        }
+        let javaApi: JavaExtensionApi | undefined;
+        if (!javaExtension.isActive) {
+            javaApi = await javaExtension.activate() as JavaExtensionApi | undefined;
         } else {
-            if(lockFileExist && !portInUse) {
-                fs.unlinkSync(lockFile);
-            }
-            localPort = serverPort;
-            const serverHome = this.getServerHome(process);
-            this.startServer(serverHome, localPort, this.javaHome, stdoutCallback, stderrCallback, api);
-            localSpawned = true;
+            javaApi = javaExtension.exports as JavaExtensionApi | undefined;
         }
-
-        const opts = {
-            resources: [`tcp:localhost:${localPort}`],
-            delay: this.options.connectionDelay, 
-            interval: this.options.connectionPollFrequency,
-            simultaneous: 1 // limit connection attempts to one per resource at a time
-        };
-        await waitOn(opts);
-        const ret: HostPortSpawned = {
-            host: 'localhost',
-            port: localPort,
-            spawned: localSpawned,
-        };
-        return ret;
+        const deadline = Date.now() + EquinoxRspLauncher.COMMAND_REGISTRATION_TIMEOUT_MS;
+        while (Date.now() < deadline) {
+            const commands = await vscode.commands.getCommands(true);
+            if (commands.includes(EquinoxRspLauncher.JAVA_WORKSPACE_COMMAND)) {
+                await this.waitForJavaServerReady(javaApi);
+                return;
+            }
+            await new Promise(resolve => setTimeout(resolve, EquinoxRspLauncher.COMMAND_REGISTRATION_POLL_MS));
+        }
+        return Promise.reject(new Error(
+            `Command '${EquinoxRspLauncher.JAVA_WORKSPACE_COMMAND}' was not registered by '${EquinoxRspLauncher.JAVA_EXTENSION_ID}'.`
+        ));
     }
-    private displayRequirementRejection(error: RspRequirementsRejection) {
-        if(error) {
-            const msg = error.message;
-            const buttonArray: ErrorMsgBtn[] = error.btns || [];
-            const buttonLabels:string[] = buttonArray.map(btn => btn.label);
-            // show error
-            vscode.window.showErrorMessage(msg, ...buttonLabels)
-                .then(selection => {
-                    const btnSelected = buttonArray.find(btn => btn.label === selection);
-                    if (btnSelected) {
-                        if (btnSelected.openUrl) {
-                            vscode.commands.executeCommand('vscode.open', btnSelected.openUrl);
-                        } else {
-                            vscode.window.showInformationMessage(
-                                `To configure Java for the RSP-WTP Server Connectors Extension, add "wtp-rsp-ui.rsp.java.home" property to your settings file
-                        (ex. "wtp-rsp-ui.rsp.java.home": "/usr/local/java/jdk-${this.options.minimumSupportedJava}.0.1").`);
-                            vscode.commands.executeCommand(
-                                'workbench.action.openSettingsJson'
-                            );
-                        }
-                    }
-                });
+
+    private async waitForJavaServerReady(javaApi: JavaExtensionApi | undefined): Promise<void> {
+        if (!javaApi || typeof javaApi.serverReady !== 'function') {
+            return;
+        }
+        await Promise.race([
+            javaApi.serverReady(),
+            new Promise((_, reject) => setTimeout(() => {
+                reject(new Error(`Timed out waiting for '${EquinoxRspLauncher.JAVA_EXTENSION_ID}' language server readiness.`));
+            }, EquinoxRspLauncher.SERVER_READY_TIMEOUT_MS))
+        ]);
+    }
+
+    private getEmbeddedLogPath(): string | undefined {
+        const storagePath = process.env['VSCODE_STORAGE_PATH'];
+        if (!storagePath || !storagePath.trim().length) {
+            return undefined;
+        }
+        return path.join(storagePath, `${this.options.rspId}.embedded.log`);
+    }
+
+    private startLogTail(logPath: string | undefined, stdoutCallback: (data: string) => void): void {
+        if (!logPath) {
+            return;
+        }
+        this.logTailer = new EmbeddedLogTailer((data: string) => {
+            stdoutCallback(`[server]\n${data}`);
+        });
+        this.logTailer.start(logPath);
+    }
+
+    private stopLogTail(): void {
+        if (this.logTailer) {
+            this.logTailer.stop();
+            this.logTailer = undefined;
         }
     }
 }

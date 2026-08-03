@@ -21,23 +21,6 @@ const RSP_PROVIDER_NAME = 'RSP-WTP Server Connectors';
  */
 const RSP_ID = 'cabutchei-wtp-rsp-server-connector';
 
-/**
- * The minimum port for this rsp instance to avoid clobbering
- */
-const RSP_MIN_PORT = 8500;
-/**
- * The maximum port for this rsp instance to avoid clobbering
- */
-const RSP_MAX_PORT = 8999;
-/**
- * How long to wait before trying to connect
- */
-const RSP_CONNECTION_DELAY = 1500;
-/**
- * How frequently to attempt to connect after launch
- */
-const RSP_CONNECTION_POLL_INTERVAL = 500;
-
 export const getImageFilenameForServerType = (serverType: string): string => {
     if (serverType.startsWith('org.jboss.ide.eclipse.as.7')) {
         return 'jbossas7_ligature.svg';
@@ -60,11 +43,6 @@ export const OPTIONS: EquinoxRspLauncherOptions = {
     providerId: RSP_PROVIDER_ID,
     providerName: RSP_PROVIDER_NAME,
     rspId: RSP_ID,
-    minPort: RSP_MIN_PORT,
-    maxPort: RSP_MAX_PORT,
-    connectionDelay: RSP_CONNECTION_DELAY,
-    connectionPollFrequency: RSP_CONNECTION_POLL_INTERVAL,
-    minimumSupportedJava: 21,
     getImagePathForServerType: function (serverType: string): Uri {
         const tmpPath: string = getImageFilenameForServerType(serverType);
         if(tmpPath)

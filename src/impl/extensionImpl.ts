@@ -31,21 +31,44 @@ export async function activateImpl(context: vscode.ExtensionContext,
     }
     registerRecommendations(context);
     context.subscriptions.push(vscode.commands.registerCommand('wtp.serverConnector.openWorkspaceStorage', async () => {
-        const storageUri = context.storageUri;
+        const storageUri = getWorkspaceStorageUri(context);
         if (!storageUri) {
-            vscode.window.showErrorMessage('No workspace-specific storage available (probably no folder opened).');
             return;
         }
         await vscode.workspace.fs.createDirectory(storageUri);
         await vscode.commands.executeCommand('revealFileInOS', storageUri);
     }));
+    context.subscriptions.push(vscode.commands.registerCommand('wtp.serverConnector.cleanWorkspaceStorage', async () => {
+        const RELOAD_AND_DELETE = 'Reload and delete';
+        const storageUri = getWorkspaceStorageUri(context);
+        if (!storageUri) {
+            return;
+        }
+
+        const selection = await vscode.window.showWarningMessage(
+            'Are you sure you want to clean the connector workspace storage?',
+            'Cancel',
+            RELOAD_AND_DELETE
+        );
+        if (selection !== RELOAD_AND_DELETE) {
+            return;
+        }
+
+        try {
+            await stopActiveController();
+            await vscode.workspace.fs.delete(storageUri, { recursive: true, useTrash: false });
+            await vscode.commands.executeCommand('workbench.action.reloadWindow');
+        } catch (error) {
+            const reason = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`Failed to clean connector workspace storage: ${reason}`);
+        }
+    }));
     activeController = api;
     context.subscriptions.push(new vscode.Disposable(() => {
         void stopActiveController();
     }));
-    const storageUri = context.storageUri;
+    const storageUri = getWorkspaceStorageUri(context);
     if (!storageUri) {
-        vscode.window.showErrorMessage('No workspace-specific storage available (probably no folder opened).');
         return;
     }
     await vscode.workspace.fs.createDirectory(storageUri);
@@ -73,6 +96,15 @@ async function stopActiveController(): Promise<void> {
     } catch (error) {
         console.error('Failed to stop RSP process during extension shutdown', error);
     }
+}
+
+function getWorkspaceStorageUri(context: vscode.ExtensionContext): vscode.Uri | undefined {
+    const storageUri = context.storageUri;
+    if (!storageUri) {
+        vscode.window.showErrorMessage('No workspace-specific storage available (probably no folder opened).');
+        return undefined;
+    }
+    return storageUri;
 }
 
 async function registerRecommendations(context: vscode.ExtensionContext) {

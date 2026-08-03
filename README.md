@@ -1,14 +1,14 @@
 # WTP RSP Server Connector
 
-`WTP RSP Server Connector` is the VS Code extension that launches and connects the local WTP-RSP server distribution to the `WTP RSP UI` extension.
+`WTP RSP Server Connector` is the VS Code extension that bootstraps and connects the WTP-RSP server inside the Java extension's Equinox runtime.
 
-It is the bridge between the VS Code UI and the Eclipse/WTP-based server process shipped by this toolchain.
+It is the bridge between the VS Code UI and the Eclipse/WTP-based server bundles now hosted by vscode-java / JDT LS.
 
 ## What this extension does
 
-- Starts and stops the local WTP-RSP server process
-- Connects the UI extension to that server over RSP/WTP-RSP
-- Packages the local product into the extension's `server/` directory for distribution
+- Starts and stops the embedded WTP-RSP socket server inside JDT LS
+- Connects the UI extension to that server over the existing RSP/WTP-RSP socket protocol
+- Contributes the JDT LS bridge bundle through `javaExtensions`
 - Installs the companion `WTP RSP UI` extension as a dependency
 - Exposes connector-specific utility commands such as opening workspace storage
 
@@ -19,9 +19,9 @@ This repository is only one piece of the full stack:
 - `rsp-wtp-ui`: the VS Code UI layer
 - `rsp-wtp-server`: the Eclipse/WTP-based RSP server implementation
 - `rsp-wtp-client`: the generated protocol client used by the UI
-- `jdtls-jrecontainer-plugin`: the JDT LS companion used for Java runtime and classpath-container synchronization
+- `jdtls-serverbridge-plugin`: the JDT LS bridge project that contributes the embedded RSP lifecycle commands
 
-The connector is responsible for launching the server and making it available to the UI.
+The connector is responsible for bootstrapping the embedded server and making its socket endpoint available to the UI.
 
 ## Supported runtimes
 
@@ -45,19 +45,13 @@ Most server-management commands shown in VS Code come from `WTP RSP UI`, but the
 
 This extension does not currently contribute user-facing settings of its own.
 
-Runtime behavior is typically controlled through:
-
-- `WTP RSP UI` settings such as `wtp-rsp-ui.rsp.java.home`
-- environment variables used during local development and packaging
-- the packaged server distribution copied into `server/`
-
 ## Fork origin
 
 This project started as a fork of the original Red Hat `vscode-server-connector` project:
 
 - https://github.com/redhat-developer/vscode-server-connector
 
-This fork adapts that foundation for the WTP-RSP toolchain and its current server packaging and launch flow.
+This fork adapts that foundation for the WTP-RSP toolchain and its embedded-JDT-LS bootstrap flow.
 
 ## Contributing
 
